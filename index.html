@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>FlowRead</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: 'var(--bg-color)',
+            surface: 'var(--surface-color)',
+            primary: 'var(--primary-color)',
+            text: 'var(--text-color)',
+            muted: 'var(--muted-color)',
+          },
+          fontFamily: {
+            sans: ['Lexend', 'sans-serif'],
+            serif: ['Lexend', 'sans-serif'], /* Replacing Serif with Lexend for readability */
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- PDF.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    // Configure PDF.js worker
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+  <style>
+    /* Theme Definitions */
+    :root {
+      /* Default/Light Theme Base */
+      --bg-color: #F8FAFC;
+      --surface-color: #FFFFFF;
+      --text-color: #1E293B;
+      --primary-color: #0EA5E9;
+      --muted-color: #64748B;
+      --border-color: #E2E8F0;
+      --bg-pattern: none;
+    }
+
+    .daylight {
+      /* Explicit Daylight (Same as root for now) */
+      --bg-color: #F8FAFC;
+      --surface-color: #FFFFFF;
+      --text-color: #1E293B;
+      --primary-color: #0EA5E9;
+      --muted-color: #64748B;
+      --border-color: #E2E8F0;
+      --bg-pattern: none;
+    }
+
+    .dark,
+    .midnight {
+      /* Dark Theme (Deep & Premium - "Midnight") */
+      --bg-color: #0B1120;
+      /* Very dark blue/black */
+      --surface-color: #1E293B;
+      /* Slate 800 */
+      --text-color: #F1F5F9;
+      --primary-color: #38BDF8;
+      /* Sky 400 */
+      --muted-color: #94A3B8;
+      --border-color: #334155;
+      --bg-pattern: none;
+    }
+
+    .slate {
+      /* Slate Theme (Dark Gray) */
+      --bg-color: #1a202c;
+      --surface-color: #2d3748;
+      --text-color: #edf2f7;
+      --primary-color: #a0aec0;
+      --muted-color: #718096;
+      --border-color: #4a5568;
+      --bg-pattern: none;
+    }
+
+    .paper {
+      /* Coffee/Paper Theme (Warm & Paper-like) */
+      --bg-color: #F5E6D3;
+      --surface-color: #E6D5C0;
+      --text-color: #433422;
+      --primary-color: #8D6E63;
+      --muted-color: #8D7B68;
+      --border-color: #D7CCC8;
+      /* Subtle Grainy Texture */
+      --bg-pattern: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+    }
+
+    /* Hide scrollbar for clean UI */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Smooth scrolling setup */
+    html,
+    body {
+      min-height: 100%;
+      background-color: var(--bg-color);
+      background-image: var(--bg-pattern, none);
+      background-repeat: repeat;
+      color: var(--text-color);
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+  </style>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.32.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.556.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "dexie": "https://aistudiocdn.com/dexie@^4.2.1",
+    "dexie-react-hooks": "https://aistudiocdn.com/dexie-react-hooks@^4.2.0"
+  }
+}
+</script>
+  <link rel="stylesheet" href="/index.css">
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>

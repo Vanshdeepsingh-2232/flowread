@@ -1,0 +1,5 @@
+{
+  "name": "FlowRead",
+  "description": "An AI-powered reading application that transforms dense text into bite-sized, scrollable cards for focused reading.",
+  "requestFramePermissions": []
+}
