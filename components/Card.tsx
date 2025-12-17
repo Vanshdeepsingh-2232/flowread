@@ -117,7 +117,7 @@ const Card: React.FC<CardProps> = ({ chunk, onFavorite, isActive, isBookmarked, 
         rounded-[2rem] shadow-2xl overflow-visible 
         transition-all duration-500 ease-out flex flex-col items-center
         ${getLayoutStyles()}
-        ${isActive ? 'opacity-100 scale-100 ring-1 ring-white/10' : 'opacity-40 scale-90 blur-[1px]'}
+        ${isActive ? 'opacity-100 scale-100 ring-1 ring-white/10' : 'opacity-40 scale-90'}
       `}>
 
         {/* Pills (Touching Top Border) */}

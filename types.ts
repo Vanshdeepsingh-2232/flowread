@@ -52,6 +52,8 @@ export enum AppState {
   PROFILE = 'PROFILE',
   BRAIN_BANK = 'BRAIN_BANK',
   STATS = 'STATS',
+  FEATURES = 'FEATURES',
+  ABOUT = 'ABOUT',
 }
 
 // --- User Settings & Preferences ---

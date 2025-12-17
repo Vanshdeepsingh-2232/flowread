@@ -4,6 +4,7 @@ import { db } from '../db';
 import { Book, Chunk, UserSettings, Theme } from '../types';
 import Card from './Card';
 import { ArrowLeft, Clock, Zap, Download, SkipForward, FastForward, ChevronDown } from 'lucide-react';
+import { updateReadingStreak } from '../hooks/useReadingStats';
 
 interface ReaderViewProps {
   book: Book;
@@ -72,40 +73,29 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
 
   // Handle Scroll to update active index
   const handleScroll = () => {
-    if (!containerRef.current) return;
-    const container = containerRef.current;
-    const wrapper = container.firstElementChild;
+    if (!containerRef.current || !chunks) return;
 
+    const wrapper = containerRef.current.firstElementChild;
     if (!wrapper) return;
 
-    const children = Array.from(wrapper.children);
+    const isHorizontal = settings.scrollMode === 'horizontal';
+    const children = Array.from(wrapper.children) as HTMLElement[];
+    const containerRect = containerRef.current.getBoundingClientRect();
+
     let closestIndex = activeIndex;
     let minDistance = Infinity;
 
-    const containerRect = container.getBoundingClientRect();
-    const containerCenter = isHorizontal
-      ? containerRect.left + containerRect.width / 2
-      : containerRect.top + containerRect.height / 2;
-
-    for (let i = 0; i < children.length; i++) {
-      // Skip spacers (assuming first and last children are spacers)
-      if (i === 0 || i === children.length - 1) continue;
-
-      const child = children[i] as HTMLElement;
+    // Skip first and last child (spacers)
+    for (let i = 1; i < children.length - 1; i++) {
+      const child = children[i];
       const rect = child.getBoundingClientRect();
-
-      const childCenter = isHorizontal
-        ? rect.left + rect.width / 2
-        : rect.top + rect.height / 2;
-
-      const distance = Math.abs(childCenter - containerCenter);
+      const distance = isHorizontal
+        ? Math.abs((rect.left + rect.right) / 2 - (containerRect.left + containerRect.right) / 2)
+        : Math.abs((rect.top + rect.bottom) / 2 - (containerRect.top + containerRect.bottom) / 2);
 
       if (distance < minDistance) {
         minDistance = distance;
-        const candidateChunkIndex = i - 1; // Adjust for start spacer
-        if (candidateChunkIndex >= 0 && candidateChunkIndex < (chunks?.length || 0)) {
-          closestIndex = candidateChunkIndex;
-        }
+        closestIndex = i - 1; // Adjust for start spacer
       }
     }
 
@@ -113,6 +103,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
       setActiveIndex(closestIndex);
       if (closestIndex > furthestIndex) {
         setFurthestIndex(closestIndex);
+        updateReadingStreak(); // Update streak when user makes progress
       }
       db.books.update(book.id, { lastReadIndex: closestIndex });
 

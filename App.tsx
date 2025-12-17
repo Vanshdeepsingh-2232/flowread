@@ -12,6 +12,9 @@ import Sidebar from './components/Sidebar';
 import Profile from './components/Profile';
 import SettingsModal from './components/SettingsModal';
 import ErrorToast from './components/ErrorToast';
+import Stats from './components/Stats';
+import Features from './components/Features';
+import About from './components/About';
 import { useLiveQuery } from 'dexie-react-hooks';
 
 const BATCH_SIZE = 20000; // Characters to process per batch
@@ -303,8 +306,13 @@ const App: React.FC = () => {
     }
   };
 
+  const handleNavigate = (page: 'features' | 'about') => {
+    if (page === 'features') setAppState(AppState.FEATURES);
+    if (page === 'about') setAppState(AppState.ABOUT);
+  };
+
   return (
-    <div className="text-text antialiased min-h-screen bg-background transition-colors duration-300 font-sans">
+    <div className="text-text antialiased bg-background transition-colors duration-300 font-sans">
 
       {errorState && (
         <ErrorToast
@@ -334,12 +342,23 @@ const App: React.FC = () => {
       />
 
       {/* Main Content Routing */}
+      {appState === AppState.PROCESSING && (
+        <Library
+          onSelectBook={() => { }} // Disabled during processing
+          onUploadFile={() => { }}
+          onOpenSidebar={() => setIsSidebarOpen(true)}
+          processingState={processingState}
+          onNavigate={handleNavigate}
+        />
+      )}
+
       {appState === AppState.LIBRARY && (
         <Library
           onSelectBook={handleSelectBook}
           onUploadFile={handleFileUpload}
           onOpenSidebar={() => { setSidebarSide('left'); setIsSidebarOpen(true); }}
           processingState={processingState}
+          onNavigate={handleNavigate}
         />
       )}
 
@@ -368,11 +387,15 @@ const App: React.FC = () => {
       )}
 
       {appState === AppState.STATS && (
-        <div className="min-h-screen flex items-center justify-center text-muted flex-col gap-4">
-          <h1 className="text-2xl font-bold text-primary">Coming Soon</h1>
-          <p>Detailed reading statistics tracking.</p>
-          <button onClick={() => setAppState(AppState.LIBRARY)} className="underline">Back to Library</button>
-        </div>
+        <Stats onBack={() => setAppState(AppState.LIBRARY)} />
+      )}
+
+      {appState === AppState.FEATURES && (
+        <Features onBack={() => setAppState(AppState.LIBRARY)} />
+      )}
+
+      {appState === AppState.ABOUT && (
+        <About onBack={() => setAppState(AppState.LIBRARY)} />
       )}
     </div>
   );
