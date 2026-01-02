@@ -165,20 +165,20 @@ const App: React.FC = () => {
       let text = "";
       let type: 'pdf' | 'txt' = 'txt';
 
-      // Simulate progress for extraction
-      const extractionInterval = setInterval(() => {
-        setProcessingState(prev => ({ ...prev, progress: Math.min(prev.progress + 5, 30) }));
-      }, 200);
-
       if (file.type === "application/pdf") {
-        text = await extractTextFromPdf(file);
+        text = await extractTextFromPdf(file, (progress) => {
+          // Map 0-100% PDF progress to 10-35% total progress
+          setProcessingState(prev => ({
+            ...prev,
+            progress: 10 + Math.round((progress / 100) * 25)
+          }));
+        });
         type = 'pdf';
       } else {
         text = await extractTextFromTxt(file);
+        setProcessingState(prev => ({ ...prev, progress: 35 }));
         type = 'txt';
       }
-
-      clearInterval(extractionInterval);
 
       if (!text || text.length < 10) {
         showError("Could not extract text or file is empty.");
@@ -228,9 +228,9 @@ const App: React.FC = () => {
       setProcessingState({ active: false, message: '', progress: 0 });
       setAppState(AppState.READING);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Processing failed", error);
-      showError("Failed to process file. Ensure API Key is valid and try again.");
+      showError(error.message || "Failed to process file. Ensure API Key is valid and try again.");
       setProcessingState({ active: false, message: '', progress: 0 });
     }
   };

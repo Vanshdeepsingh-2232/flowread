@@ -8,6 +8,7 @@ export interface Book {
   dateAdded: number;
   rawContent?: string; // Stored temporarily for processing
   processedCharCount: number; // Tracks how many characters have been chunked
+  furthestReadIndex?: number; // Tracks the absolute furthest point user has reached
 }
 
 export interface Chunk {

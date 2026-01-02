@@ -30,7 +30,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Track the furthest point user has reached in this session
-  const [furthestIndex, setFurthestIndex] = useState(book.lastReadIndex || 0);
+  const [furthestIndex, setFurthestIndex] = useState(Math.max(book.lastReadIndex || 0, book.furthestReadIndex || 0));
   const prevChunkCountRef = useRef<number>(0);
 
   // Restore scroll position on mount
@@ -101,11 +101,17 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
 
     if (closestIndex !== activeIndex) {
       setActiveIndex(closestIndex);
+
+      const newFurthest = Math.max(closestIndex, furthestIndex);
       if (closestIndex > furthestIndex) {
-        setFurthestIndex(closestIndex);
+        setFurthestIndex(newFurthest);
         updateReadingStreak(); // Update streak when user makes progress
       }
-      db.books.update(book.id, { lastReadIndex: closestIndex });
+
+      db.books.update(book.id, {
+        lastReadIndex: closestIndex,
+        furthestReadIndex: newFurthest
+      });
 
       // Haptic Feedback
       if (settings.hapticsEnabled && window.navigator.vibrate) {
@@ -225,19 +231,29 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
   };
 
   const handleNextChapter = () => {
-    if (!chunks) return;
+    if (!chunks || isLoadingMore) return;
     const currentChap = chunks[activeIndex]?.chapterTitle;
     const nextChapIndex = chunks.findIndex((c, i) => i > activeIndex && c.chapterTitle !== currentChap);
 
     if (nextChapIndex !== -1) {
       scrollToIndex(nextChapIndex);
     } else {
-      if (onLoadMore) onTriggerLoadMore();
+      // Fallback: If no explicit next chapter found
+      const hasMoreContent = (book.processedCharCount || 0) < (book.rawContent?.length || 0);
+
+      if (hasMoreContent) {
+        if (onLoadMore) onTriggerLoadMore();
+      } else if (activeIndex < chunks.length - 1) {
+        // If no more content to load, just "Fast Forward" 20 cards
+        scrollToIndex(Math.min(chunks.length - 1, activeIndex + 20));
+      }
     }
   };
 
   const handleResume = () => {
-    scrollToIndex(furthestIndex);
+    // Re-calculate based on current state to be safe
+    const target = Math.max(furthestIndex, book.furthestReadIndex || 0);
+    scrollToIndex(target);
   };
 
   if (!chunks) return <div className="h-screen flex items-center justify-center text-muted">Loading Book...</div>;
@@ -314,7 +330,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
 
   return (
     <div className={`
-       relative h-screen bg-background flex flex-col transition-colors duration-500 
+       relative h-[100dvh] bg-background flex flex-col transition-colors duration-500 
        font-${settings.fontFamily}
     `}>
       {/* Header / HUD */}
