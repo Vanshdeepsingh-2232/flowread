@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+  <defs>
+    <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2CFF8A"></stop>
+      <stop offset="100%" stop-color="#00B36B"></stop>
+    </linearGradient>
+  </defs>
+  
+  <!-- Top cube -->
+  <polygon points="250,100 350,150 250,200 150,150" fill="url(#gradGreen)"></polygon>
+  <polygon points="150,150 250,200 250,300 150,250" fill="#0052CC"></polygon>
+  <polygon points="250,200 350,150 350,250 250,300" fill="#0066FF"></polygon>
+  
+  <!-- Bottom cube (same size, smaller gap) -->
+  <polygon points="150,280 250,330 250,430 150,380" fill="#003399"></polygon>
+  <polygon points="250,330 350,280 350,380 250,430" fill="#0044CC"></polygon>
+</svg>

@@ -1,0 +1,19 @@
+import fs from 'fs';
+
+const content = [
+    "VITE_FIREBASE_API_KEY=AIzaSyALYGNZXwBhBT45GIqfHP9XX7chySu2378",
+    "VITE_FIREBASE_AUTH_DOMAIN=flowread-v007.firebaseapp.com",
+    "VITE_FIREBASE_PROJECT_ID=flowread-v007",
+    "VITE_FIREBASE_STORAGE_BUCKET=flowread-v007.firebasestorage.app",
+    "VITE_FIREBASE_MESSAGING_SENDER_ID=452465146248",
+    "VITE_FIREBASE_APP_ID=1:452465146248:web:db5c68001c7edb5cb3223d",
+    "VITE_FIREBASE_MEASUREMENT_ID=G-7TGVCKC2Q0"
+].join("\n");
+
+try {
+    fs.writeFileSync('.env.local', content);
+    console.log('Successfully wrote .env.local');
+} catch (err) {
+    console.error('Failed to write .env.local', err);
+    process.exit(1);
+}

@@ -1,20 +1,75 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+<img width="1200" height="475" alt="FlowRead Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+
+# 🌊 FlowRead
+### *The Art of Frictionless Reading*
+
+FlowRead isn't just an e-reader; it's an AI-powered reading companion designed to turn daunting "walls of text" into digestible, engaging, and memorable "Smart Reading Cards." 
+
+[**Launch App**](https://ai.studio/apps/drive/1yyXR68pXRfEd3xRa5kmVskEKTJJ7gZNx) • [**Report Bug**](https://github.com/Vanshdeepsingh-2232/flowread/issues)
+
+---
 </div>
 
-# Run and deploy your AI Studio app
+## ✨ Features
 
-This contains everything you need to run your app locally.
+- **🧠 AI Smart Chunking**: Powered by Gemini 2.5, FlowRead automatically converts long PDFs and text files into semantic "cards" based on scene changes, plot points, or topic shifts.
+- **🎭 Automated Genre Detection**: The app analyzes your book upon upload to tailor the UI and reading experience (Fiction vs. Non-Fiction vs. Technical).
+- **☁️ Seamless Cloud Sync**: Authenticate with Firebase to sync your reading progress and library across all your devices.
+- **⚡ Local-First Performance**: Uses Dexie (IndexedDB) for blazing fast, offline-ready library management.
+- **🎨 Premium Themes**:
+  - **Midnight**: Deep blue-black for late-night immersion.
+  - **Slate**: Balanced dark gray for professional reading.
+  - **Paper**: Warm, textured sepia tone for a classic paperback feel.
+  - **Daylight**: High-contrast light mode for outdoor clarity.
+- **📊 Reading Insights**: Track your streaks, total read time, and vocabulary build-up.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1yyXR68pXRfEd3xRa5kmVskEKTJJ7gZNx
+## 🚀 Getting Started
 
-## Run Locally
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18+)
+- [Google Gemini API Key](https://aistudio.google.com/app/apikey)
+- Firebase Project (for Auth & Cloud Sync)
 
-**Prerequisites:**  Node.js
+### Installation
 
+1. **Clone & Install**
+   ```bash
+   git clone https://github.com/Vanshdeepsingh-2232/flowread.git
+   cd flowread
+   npm install
+   ```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+2. **Environment Setup**
+   The app uses `.env.local` for configuration. You can run the setup script to initialize environment variables:
+   ```bash
+   node setupEnv.js
+   ```
+   *Then update `.env.local` with your own keys:*
+   - `GEMINI_API_KEY`: Your key from Google AI Studio.
+   - `VITE_FIREBASE_API_KEY`: Found in Firebase Project Settings.
+
+3. **Enable API (Crucial)**
+   Ensure the **Generative Language API** is enabled for your project:
+   [Enable Gemini API here](https://console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview)
+
+4. **Launch**
+   ```bash
+   npm run dev
+   ```
+   Open `http://localhost:8000` to start reading.
+
+## 🛠️ Tech Stack
+
+- **Frontend**: React 19, TypeScript, Vite
+- **Styling**: Tailwind CSS
+- **Database**: Dexie.js (IndexedDB)
+- **Backend**: Firebase (Auth, Firestore, Storage)
+- **AI**: Google Gemini 2.5 Flash
+
+---
+
+<p align="center">
+Built with ❤️ by Vanshdeep Singh<br/>
+<i>Making the world's knowledge more accessible, one card at a time.</i>
+</p>

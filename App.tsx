@@ -1,28 +1,45 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from './utils/logger';
 import { AppState, Book, UserSettings, Theme } from './types';
 import { db } from './db';
 import { extractTextFromPdf, extractTextFromTxt } from './services/pdfService';
 import { semanticChunking } from './services/geminiService';
 import { findSafeBatchEnd } from './utils/textUtils';
-import ReaderView from './components/ReaderView';
-import BrainBank from './components/BrainBank';
+
+// Eager Imports (Critical for First Paint)
 import Library from './components/Library';
 import Sidebar from './components/Sidebar';
-import Profile from './components/Profile';
-import SettingsModal from './components/SettingsModal';
 import ErrorToast from './components/ErrorToast';
-import Stats from './components/Stats';
-import Features from './components/Features';
-import About from './components/About';
+import SettingsModal from './components/SettingsModal';
+import ErrorBoundary from './components/ErrorBoundary';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useAuth } from './context/AuthContext';
+import { useBooks } from './hooks/useBooks';
+import { uploadBookToCloud } from './services/firebaseService';
+import { detectGenre } from './services/genreDetector';
+
+// Lazy Imports (Load only when needed)
+const ReaderView = React.lazy(() => import('./components/ReaderView'));
+const BrainBank = React.lazy(() => import('./components/BrainBank'));
+const Profile = React.lazy(() => import('./components/Profile'));
+const Stats = React.lazy(() => import('./components/Stats'));
+const Features = React.lazy(() => import('./components/Features'));
+const About = React.lazy(() => import('./components/About'));
+
+// Simple Loading Fallback
+const PageLoader = () => (
+  <div className="h-full w-full flex items-center justify-center min-h-[50vh]">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
 
 const BATCH_SIZE = 20000; // Characters to process per batch
 
 // Default Settings
 const DEFAULT_SETTINGS: UserSettings = {
   theme: 'midnight',
-  fontFamily: 'serif',
+  fontFamily: 'quicksand',
   textSize: 3,
   scrollMode: 'vertical',
   density: 'standard',
@@ -36,6 +53,10 @@ const DEFAULT_SETTINGS: UserSettings = {
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.LIBRARY);
   const [currentBook, setCurrentBook] = useState<Book | null>(null);
+
+  // Auth & Sync Logic
+  const { currentUser: user } = useAuth();
+  useBooks(); // Sync Trigger
 
   // Error/Notification State
   const [errorState, setErrorState] = useState<{ message: string; type: 'error' | 'success' | 'warning' } | null>(null);
@@ -60,13 +81,18 @@ const App: React.FC = () => {
 
   // Load Settings
   useEffect(() => {
+    logger.info('App', 'Loading user settings from localStorage');
     const saved = localStorage.getItem('flowread-settings-v1');
     if (saved) {
       try {
-        setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(saved) });
+        const parsed = JSON.parse(saved);
+        setSettings({ ...DEFAULT_SETTINGS, ...parsed });
+        logger.success('App', 'Settings loaded successfully', parsed);
       } catch (e) {
-        console.error("Failed to parse settings", e);
+        logger.error('App', 'Failed to parse settings', e);
       }
+    } else {
+      logger.info('App', 'No saved settings found, using defaults');
     }
   }, []);
 
@@ -106,21 +132,33 @@ const App: React.FC = () => {
       await db.chunks.clear();
 
       // 2. Clear Raw Content from Books
-      const books = await db.books.toArray();
-      const updates = books.map(b => ({ key: b.id, changes: { rawContent: "", processedCharCount: 0, totalChunks: 0 } }));
-      // await db.books.bulkPut(updates...); -> Dexie bulkUpdate is tricky, loop for now
-      for (const b of books) {
-        await db.books.update(b.id, { rawContent: undefined, processedCharCount: 0, totalChunks: 0 });
-      }
+      await db.books.toCollection().modify({ rawContent: "", processedCharCount: 0, totalChunks: 0 });
 
-      showSuccess("Cache cleared! Books will need to be re-processed.");
-      setCurrentBook(null);
-      setAppState(AppState.LIBRARY);
+      showSuccess("Cache cleared. Book text removed, highlights kept.");
+      window.location.reload();
     }
   };
 
-  // Global Edge Swipe Detection
+  const handleExportHighlights = async () => {
+    const highlights = await db.brainBank.toArray();
+    const blob = new Blob([JSON.stringify(highlights, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `flowread-highlights-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+  };
+
+  // -------------------------
+  // Handlers
+  // -------------------------
+
+  // Handle Global Swipe from Edges
   useEffect(() => {
+
+
+    // We already have Sidebar opening logic? No, only in specific buttons.
+    // Let's add edge swipe detection for opening sidebar
     let touchStartX = 0;
 
     const handleGlobalTouchStart = (e: TouchEvent) => {
@@ -128,11 +166,12 @@ const App: React.FC = () => {
     };
 
     const handleGlobalTouchEnd = (e: TouchEvent) => {
-      if (isSidebarOpen) return;
-
       const touchEndX = e.changedTouches[0].clientX;
-      const windowWidth = window.innerWidth;
       const deltaX = touchEndX - touchStartX;
+      const windowWidth = window.innerWidth;
+
+      // Ignore if sidebar is open (Sidebar handles closing)
+      if (isSidebarOpen) return;
 
       // Swipe RIGHT from LEFT EDGE (< 50px)
       if (touchStartX < 50 && deltaX > 50) {
@@ -159,6 +198,7 @@ const App: React.FC = () => {
 
   // Handle uploading and processing a new file
   const handleFileUpload = async (file: File) => {
+    logger.info('App', `Starting file upload process for: ${file.name}`, { size: file.size, type: file.type });
     setProcessingState({ active: true, message: 'Reading file...', progress: 10 });
 
     try {
@@ -181,68 +221,115 @@ const App: React.FC = () => {
       }
 
       if (!text || text.length < 10) {
+        logger.warn('App', 'File processing aborted: text extraction failed or file too short');
         showError("Could not extract text or file is empty.");
         setProcessingState({ active: false, message: '', progress: 0 });
         return;
       }
 
-      setProcessingState({ active: true, message: 'Analyzing structure...', progress: 35 });
+      logger.info('App', `Text extraction complete (${text.length} chars). Identifying genre...`);
+      setProcessingState({ active: true, message: 'Analyzing structure...', progress: 60 });
+
+      // 2. Detect Genre
+      const genre = await detectGenre(text);
+      logger.info('App', `Detected genre: ${genre}`);
+
+      // 3. Smart Chunking (First Batch)
+      const firstBatchEnd = findSafeBatchEnd(text, BATCH_SIZE);
+      const firstBatchText = text.slice(0, firstBatchEnd);
+
+      logger.info('App', `Processing first batch of ${firstBatchText.length} characters`);
+      setProcessingState({ active: true, message: `Creating smart cards (${genre})...`, progress: 75 });
       const bookId = uuidv4();
+      const chunks = await semanticChunking(firstBatchText, bookId, 0, undefined, file.name.replace(/\.[^/.]+$/, ""), genre);
 
-      // Process first batch (Smart Slice)
-      const safeEndIndex = findSafeBatchEnd(text, BATCH_SIZE);
-      const textBatch = text.slice(0, safeEndIndex);
-
-      setProcessingState({ active: true, message: 'Chunking Chapter 1...', progress: 40 });
-
-      // Fake progress during AI call
-      const chunkingInterval = setInterval(() => {
-        setProcessingState(prev => ({ ...prev, progress: Math.min(prev.progress + 2, 90) }));
-      }, 500);
-
-      const bookTitle = file.name.replace(/\.[^/.]+$/, "");
-      const chunks = await semanticChunking(textBatch, bookId, 0, undefined, bookTitle);
-      clearInterval(chunkingInterval);
-
+      // 4. Save to DB
       const newBook: Book = {
         id: bookId,
-        title: bookTitle,
+        title: file.name.replace(/\.[^/.]+$/, ""),
         author: "Unknown",
         fileType: type,
-        totalChunks: chunks.length,
-        lastReadIndex: 0,
         dateAdded: Date.now(),
+        lastReadIndex: 0,
+        totalChunks: chunks.length,
+        processedCharCount: firstBatchEnd,
         rawContent: text,
-        processedCharCount: safeEndIndex
+        genre: genre
       };
 
-      setProcessingState({ active: true, message: 'Finalizing...', progress: 100 });
-
-      // Save to IndexedDB
-      await (db as any).transaction('rw', db.books, db.chunks, async () => {
+      logger.info('App', 'Saving book and chunks to local database');
+      await db.transaction('rw', db.books, db.chunks, async () => {
         await db.books.add(newBook);
         await db.chunks.bulkAdd(chunks);
       });
 
+      logger.success('App', `Book "${newBook.title}" processed and saved locally`);
+
+      // 5. Cloud Sync (Background)
+      if (user) {
+        logger.info('App', 'Initiating background cloud sync');
+        // Critical Fix: Pass chunks explicitly as they are not in the 'Book' type
+        uploadBookToCloud(user.uid, { ...newBook, chunks })
+          .then(() => logger.success('App', '☁️ Uploaded to cloud'))
+          .catch((err) => logger.error('App', 'Cloud upload failed', err));
+      } else {
+        logger.warn('App', 'User not logged in - Book saved locally only');
+      }
+
+      setProcessingState({ active: false, message: '', progress: 100 });
       setCurrentBook(newBook);
-      setProcessingState({ active: false, message: '', progress: 0 });
       setAppState(AppState.READING);
 
     } catch (error: any) {
-      console.error("Processing failed", error);
-      showError(error.message || "Failed to process file. Ensure API Key is valid and try again.");
+      logger.error('App', 'File processing failed', error);
+      showError(error.message || "Failed to process file.");
       setProcessingState({ active: false, message: '', progress: 0 });
     }
   };
 
-  const handleSelectBook = (book: Book) => {
+  // Cleanup duplicate chunks (same index) keeping the one with latest ID maybe? 
+  // Actually usually we want to keep one.
+  const cleanupDuplicateChunks = async (bookId: string) => {
+    const chunks = await db.chunks.where('bookId').equals(bookId).sortBy('index');
+    const seenIndices = new Set<number>();
+    const duplicateIds: string[] = [];
+
+    for (const chunk of chunks) {
+      if (seenIndices.has(chunk.index)) {
+        duplicateIds.push(chunk.id);
+      } else {
+        seenIndices.add(chunk.index);
+      }
+    }
+
+    if (duplicateIds.length > 0) {
+      await db.chunks.bulkDelete(duplicateIds);
+      logger.success('App', `Cleaned up ${duplicateIds.length} duplicate chunks.`);
+      // Re-count chunks
+      const count = await db.chunks.where('bookId').equals(bookId).count();
+      await db.books.update(bookId, { totalChunks: count });
+    }
+  };
+
+  const handleSelectBook = async (book: Book) => {
     // Check if book has content (might be cleared cache)
     if (!book.totalChunks || book.totalChunks === 0) {
       showError("This book's content is missing. Please re-upload.");
       return;
     }
-    setCurrentBook(book);
-    setAppState(AppState.READING);
+
+    // Auto-heal duplicates
+    await cleanupDuplicateChunks(book.id);
+
+    // Fetch full book incase rawContent is missing from list view
+    const fullBook = await db.books.get(book.id);
+
+    if (fullBook) {
+      setCurrentBook(fullBook);
+      setAppState(AppState.READING);
+    } else {
+      showError("Book not found in database.");
+    }
   };
 
   const handleBackToLibrary = () => {
@@ -251,6 +338,7 @@ const App: React.FC = () => {
   };
 
   const handleLoadMore = async () => {
+    if (processingState.active) return; // Prevent concurrent calls
     if (!currentBook || !currentBook.rawContent) return;
 
     const startChar = currentBook.processedCharCount;
@@ -263,13 +351,17 @@ const App: React.FC = () => {
       const nextBatchEnd = findSafeBatchEnd(currentBook.rawContent.slice(startChar), BATCH_SIZE) + startChar;
       const textBatch = currentBook.rawContent.slice(startChar, nextBatchEnd);
 
-      // Find previous context (last chapter)
-      const lastChunk = await db.chunks.where('bookId').equals(currentBook.id).reverse().first();
+      // Find previous context (last chapter) and robustly get the highest index
+      // sort by index to ensure we get the absolute last one
+      const sortedChunks = await db.chunks.where('bookId').equals(currentBook.id).sortBy('index');
+      const lastChunk = sortedChunks[sortedChunks.length - 1];
+
       const context = lastChunk?.chapterTitle;
+      const nextIndex = (lastChunk?.index ?? -1) + 1;
 
       setProcessingState({ active: true, message: 'Synthesizing...', progress: 50 });
 
-      const newChunks = await semanticChunking(textBatch, currentBook.id, (lastChunk?.index || 0) + 1, context, currentBook.title);
+      const newChunks = await semanticChunking(textBatch, currentBook.id, nextIndex, context, currentBook.title, currentBook.genre);
 
       await db.transaction('rw', db.books, db.chunks, async () => {
         await db.chunks.bulkAdd(newChunks);
@@ -284,120 +376,146 @@ const App: React.FC = () => {
       if (updatedBook) setCurrentBook(updatedBook);
 
       setProcessingState({ active: false, message: '', progress: 0 });
-    } catch (e) {
+    } catch (e: any) {
       setProcessingState({ active: false, message: '', progress: 0 });
       showError("Failed to load more content. Check your connection.");
-      console.error(e);
-    }
-  };
-
-  const handleNavigateToChunk = async (bookId: string, chunkId: string) => {
-    const book = await db.books.get(bookId);
-    if (book) {
-      const chunk = await db.chunks.get(chunkId);
-      if (chunk) {
-        await db.books.update(bookId, { lastReadIndex: chunk.index });
-        const updatedBook = await db.books.get(bookId);
-        if (updatedBook) {
-          setCurrentBook(updatedBook);
-          setAppState(AppState.READING);
-        }
-      }
+      logger.error('App', 'Failed to load more chunks', e);
     }
   };
 
   const handleNavigate = (page: 'features' | 'about') => {
+    logger.info('App', `Navigating to ${page} page`);
     if (page === 'features') setAppState(AppState.FEATURES);
     if (page === 'about') setAppState(AppState.ABOUT);
   };
 
+  const handleNavigateToProfile = () => {
+    logger.info('App', 'Navigating to Profile');
+    setAppState(AppState.PROFILE);
+  };
+
+  // Render Content based on State
+  const renderContent = () => {
+    if (processingState.active) {
+      // While processing, show a loading/progress screen
+      return (
+        <div className="h-screen w-full flex flex-col items-center justify-center p-8 text-center space-y-6">
+          <div className="relative w-32 h-32">
+            <svg className="animate-spin w-full h-full text-primary" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" className="opacity-25" />
+              <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center font-bold text-xl text-primary font-mono">
+              {processingState.progress}%
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold animate-pulse">{processingState.message}</h2>
+          <p className="text-muted max-w-md">Our AI is reading your book, analyzing the plot, and preparing the perfect reading experience.</p>
+        </div>
+      );
+    }
+
+    return (
+      <Suspense fallback={<PageLoader />}>
+        {(() => {
+          switch (appState) {
+            case AppState.READING:
+              return currentBook ? (
+                <ReaderView
+                  book={currentBook}
+                  onBack={handleBackToLibrary}
+                  onLoadMore={handleLoadMore}
+                  settings={settings}
+                  onOpenSettings={() => setIsSettingsOpen(true)}
+                />
+              ) : null;
+
+            case AppState.BRAIN_BANK:
+              return <BrainBank onBack={handleBackToLibrary} onNavigate={(bookId, idx) => {
+                db.books.get(bookId).then(book => {
+                  if (book) {
+                    setCurrentBook(book);
+                    book.lastReadIndex = idx;
+                    setAppState(AppState.READING);
+                  }
+                });
+              }} />;
+
+            case AppState.PROFILE:
+              return <Profile
+                onBack={handleBackToLibrary}
+                currentTheme={settings.theme}
+                onThemeChange={(theme) => setSettings({ ...settings, theme })}
+              />;
+
+            case AppState.STATS:
+              return <Stats onBack={handleBackToLibrary} />;
+
+            case AppState.FEATURES:
+              return <Features onBack={handleBackToLibrary} />;
+
+            case AppState.ABOUT:
+              return <About onBack={handleBackToLibrary} />;
+
+            case AppState.LIBRARY:
+            default:
+              return (
+                <Library
+                  onUploadFile={handleFileUpload}
+                  onSelectBook={handleSelectBook}
+                  onNavigate={handleNavigate}
+                  processingState={processingState}
+                  onOpenSidebar={() => { setSidebarSide('left'); setIsSidebarOpen(true); }}
+                  onNavigateToProfile={handleNavigateToProfile}
+                />
+              );
+          }
+        })()}
+      </Suspense>
+    );
+  };
+
   return (
-    <div className="text-text antialiased bg-background transition-colors duration-300 font-sans">
+    <ErrorBoundary>
+      <div className={`min-h-[100dvh] text-text antialiased bg-background transition-colors duration-300 font-${settings.fontFamily}`}>
 
-      {errorState && (
-        <ErrorToast
-          message={errorState.message}
-          type={errorState.type}
-          onClose={() => setErrorState(null)}
+        {/* Sidebar */}
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          onNavigate={setAppState}
+          currentPage={appState}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          side={sidebarSide}
         />
-      )}
 
-      {/* Sidebar Navigation */}
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        onNavigate={setAppState}
-        currentPage={appState}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        side={sidebarSide}
-      />
-
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        settings={settings}
-        onUpdateSettings={setSettings}
-        onClearCache={handleClearCache}
-        storageUsageMB={storageEstimate || 0}
-      />
-
-      {/* Main Content Routing */}
-      {appState === AppState.PROCESSING && (
-        <Library
-          onSelectBook={() => { }} // Disabled during processing
-          onUploadFile={() => { }}
-          onOpenSidebar={() => setIsSidebarOpen(true)}
-          processingState={processingState}
-          onNavigate={handleNavigate}
-        />
-      )}
-
-      {appState === AppState.LIBRARY && (
-        <Library
-          onSelectBook={handleSelectBook}
-          onUploadFile={handleFileUpload}
-          onOpenSidebar={() => { setSidebarSide('left'); setIsSidebarOpen(true); }}
-          processingState={processingState}
-          onNavigate={handleNavigate}
-        />
-      )}
-
-      {appState === AppState.READING && currentBook && (
-        <ReaderView
-          book={currentBook}
-          onBack={handleBackToLibrary}
-          onLoadMore={handleLoadMore}
+        {/* Settings Modal (Right Sidebar basically, or Modal) */}
+        {/* We are reusing Sidebar for settings access, but we also have a dedicated SettingsModal for advanced stuff */}
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
           settings={settings}
+          onUpdateSettings={setSettings}
+          onClearCache={handleClearCache}
+          onExportHighlights={handleExportHighlights}
+          storageUsedMB={storageEstimate || 0}
         />
-      )}
 
-      {appState === AppState.PROFILE && (
-        <Profile
-          onBack={() => setAppState(AppState.LIBRARY)}
-          currentTheme={settings.theme as Theme}
-          onThemeChange={(t) => setSettings({ ...settings, theme: t })}
-        />
-      )}
+        {/* Main Content */}
+        <main className="relative z-10">
+          {renderContent()}
+        </main>
 
-      {appState === AppState.BRAIN_BANK && (
-        <BrainBank
-          onBack={() => setAppState(AppState.LIBRARY)}
-          onNavigateToChunk={handleNavigateToChunk}
-        />
-      )}
-
-      {appState === AppState.STATS && (
-        <Stats onBack={() => setAppState(AppState.LIBRARY)} />
-      )}
-
-      {appState === AppState.FEATURES && (
-        <Features onBack={() => setAppState(AppState.LIBRARY)} />
-      )}
-
-      {appState === AppState.ABOUT && (
-        <About onBack={() => setAppState(AppState.LIBRARY)} />
-      )}
-    </div>
+        {/* Error Toast */}
+        {errorState && (
+          <ErrorToast
+            message={errorState.message}
+            type={errorState.type}
+            onClose={() => setErrorState(null)}
+          />
+        )}
+      </div>
+    </ErrorBoundary>
   );
 };
 

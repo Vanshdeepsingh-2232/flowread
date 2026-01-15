@@ -9,6 +9,7 @@ export interface Book {
   rawContent?: string; // Stored temporarily for processing
   processedCharCount: number; // Tracks how many characters have been chunked
   furthestReadIndex?: number; // Tracks the absolute furthest point user has reached
+  genre?: 'fiction' | 'non_fiction' | 'technical';
 }
 
 export interface Chunk {
@@ -59,8 +60,8 @@ export enum AppState {
 
 // --- User Settings & Preferences ---
 
-export type Theme = 'midnight' | 'slate' | 'paper' | 'daylight';
-export type FontFamily = 'serif' | 'sans' | 'dyslexic';
+export type Theme = 'midnight' | 'slate' | 'paper' | 'daylight' | 'coffee';
+export type FontFamily = 'serif' | 'sans' | 'dyslexic' | 'quicksand';
 export type ScrollMode = 'vertical' | 'horizontal';
 export type DensityMode = 'focus' | 'standard' | 'dense';
 export type ProgressBarStyle = 'segmented' | 'minimal' | 'hidden';

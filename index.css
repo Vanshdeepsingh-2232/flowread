@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-primary: var(--primary);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-border: var(--border-color);
+
+  --font-sans: "Quicksand", sans-serif;
+  --font-serif: "Literata", serif;
+  --font-quicksand: "Quicksand", sans-serif;
+  --font-dyslexic: "Plus Jakarta Sans", sans-serif;
+}
+
+@layer base {
+  :root {
+    --background: #020617;
+    /* Deepest Midnight Navy */
+    --surface: #0f172a;
+    /* Refined Slate Blue */
+    --text: #f8fafc;
+    /* Off-white for readability */
+    --primary: #38bdf8;
+    /* Elegant Sky Blue (replaces the harsh green) */
+    --muted: #64748b;
+    /* Soft Muted Slate */
+    --border-color: #1e293b;
+  }
+}
+
+/* Midnight Theme (Default) */
+.midnight {
+  --background: #020617;
+  --surface: #0f172a;
+  --text: #f1f5f9;
+  --muted: #64748b;
+  --border-color: #1e293b;
+  --primary: #38bdf8;
+  /* Switched to Sky Blue for a premium feel */
+}
+
+/* Slate Theme */
+.slate {
+  --background: #0f172a;
+  --surface: #1e293b;
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --border-color: #334155;
+  --primary: #38bdf8;
+}
+
+/* Paper Theme */
+.paper {
+  --background: #fdfbf7;
+  --surface: #f4f1ea;
+  --text: #3c3836;
+  --muted: #928374;
+  --border-color: #d5c4a1;
+  --primary: #ea580c;
+  /* Orange-ish */
+}
+
+/* Daylight Theme */
+.daylight {
+  --background: #ffffff;
+  --surface: #f3f4f6;
+  --text: #111827;
+  --muted: #6b7280;
+  --border-color: #e5e7eb;
+  --primary: #2563eb;
+}
+
+/* Coffee Theme */
+.coffee {
+  --background: #231e18;
+  /* Dark brown */
+  --surface: #362e26;
+  --text: #dbc8b6;
+  --muted: #9a8a7c;
+  --border-color: #4e4236;
+  --primary: #dcb188;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}

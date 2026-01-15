@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { Book, Chunk, UserSettings, Theme } from '../types';
 import Card from './Card';
-import { ArrowLeft, Clock, Zap, Download, SkipForward, FastForward, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Clock, Zap, Download, SkipForward, FastForward, ChevronDown, Settings } from 'lucide-react';
 import { updateReadingStreak } from '../hooks/useReadingStats';
 
 interface ReaderViewProps {
@@ -11,9 +11,10 @@ interface ReaderViewProps {
   onBack: () => void;
   onLoadMore: () => Promise<void>;
   settings: UserSettings;
+  onOpenSettings: () => void;
 }
 
-const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, settings }) => {
+const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, settings, onOpenSettings }) => {
   const chunks = useLiveQuery(() => db.chunks.where('bookId').equals(book.id).sortBy('index'));
   const bookmarks = useLiveQuery(() => db.brainBank.where('bookId').equals(book.id).toArray());
 
@@ -33,17 +34,19 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
   const [furthestIndex, setFurthestIndex] = useState(Math.max(book.lastReadIndex || 0, book.furthestReadIndex || 0));
   const prevChunkCountRef = useRef<number>(0);
 
-  // Restore scroll position on mount
+  // Track if we have restored the initial scroll position
+  const initialRestoreDone = useRef(false);
+
+  // Restore scroll position on mount (only once)
   useEffect(() => {
-    if (chunks && chunks.length > 0 && containerRef.current) {
-      if (containerRef.current.scrollTop === 0) {
-        setTimeout(() => {
-          scrollToIndex(book.lastReadIndex || 0, 'auto');
-        }, 100);
-      }
+    if (chunks && chunks.length > 0 && containerRef.current && !initialRestoreDone.current) {
+      // Only scroll if we haven't done it yet
+      setTimeout(() => {
+        scrollToIndex(book.lastReadIndex || 0, 'auto');
+        initialRestoreDone.current = true;
+      }, 100);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chunks ? chunks.length : 0]);
+  }, [chunks]);
 
   // Helper to scroll
   const scrollToIndex = (index: number, behavior: ScrollBehavior = 'smooth') => {
@@ -259,13 +262,17 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
   if (!chunks) return <div className="h-screen flex items-center justify-center text-muted">Loading Book...</div>;
 
   const timeRemaining = Math.ceil((chunks.length - activeIndex) / 4);
-  const hasMoreContent = (book.processedCharCount || 0) < (book.rawContent?.length || 0);
+  const hasContent = !!book.rawContent;
+  const contentLeft = (book.rawContent?.length || 0) - (book.processedCharCount || 0);
+  const hasMoreContent = contentLeft > 0;
 
   const showSkipIntro = storyStartIndex > 0 && activeIndex < storyStartIndex;
   const showResume = activeIndex < furthestIndex - 2;
   const showNextChapter = true;
 
-  // --- Theme Logic ---
+  // ...
+
+
   const getCapsuleStyles = () => {
     switch (settings.theme) {
       case 'daylight':
@@ -346,6 +353,14 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
 
         {/* Right: Controls Stack */}
         <div className="flex flex-col items-end gap-2 pointer-events-auto">
+          {/* Settings Button */}
+          <button
+            onClick={onOpenSettings}
+            className="p-2 mb-2 bg-surface/80 backdrop-blur rounded-full text-text shadow-lg hover:opacity-80 transition border border-white/5"
+          >
+            <Settings size={20} />
+          </button>
+
           {/* Time Badge */}
           <div className="px-3 py-1 bg-surface backdrop-blur rounded-full cursor-default text-xs font-mono text-primary shadow-lg flex items-center gap-2 mb-2 border border-white/5">
             <Clock size={12} />
@@ -496,7 +511,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
           ))}
 
           {/* End Spacer & Loader */}
-          <div className={`${isHorizontal ? 'w-[20vw] h-full shrink-0 grid place-content-center' : 'h-[20vh] w-full shrink-0 py-10 flex justify-center'}`}>
+          <div className={`${isHorizontal ? 'w-screen h-full shrink-0 flex items-center justify-center snap-center' : 'h-[100dvh] w-full shrink-0 flex items-center justify-center snap-center'}`}>
             <div
               ref={loaderRef}
               className={`flex flex-col items-center gap-4 text-muted/50 p-6 rounded-2xl ${!hasMoreContent ? 'opacity-100' : ''}`}

@@ -1,3 +1,5 @@
+import { logger } from '../utils/logger';
+
 // Note: We use window.pdfjsLib from the script tag in index.html to ensure 
 // the worker version matches the library version (CDN).
 // Importing pdfjs-dist directly can cause version mismatches with the CDN worker.
@@ -14,7 +16,10 @@ declare global {
  * @param {Function} onProgress - Optional callback for progress bar (0-100)
  */
 export const extractTextFromPdf = async (file: File, onProgress?: (progress: number) => void): Promise<string> => {
+  logger.info('PDFService', `Starting extraction from PDF: ${file.name}`, { size: file.size });
+
   if (!window.pdfjsLib) {
+    logger.error('PDFService', 'PDF.js library not found on window object');
     throw new Error("PDF.js library not loaded. Please refresh the page.");
   }
 
@@ -26,7 +31,7 @@ export const extractTextFromPdf = async (file: File, onProgress?: (progress: num
     let fullText = "";
     const totalPages = pdf.numPages;
 
-    console.log(`📄 PDF Loaded: ${totalPages} pages.`);
+    logger.success('PDFService', `PDF Document loaded: ${totalPages} pages`);
 
     for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
       // 1. Get the page
@@ -48,25 +53,34 @@ export const extractTextFromPdf = async (file: File, onProgress?: (progress: num
       if (onProgress) {
         onProgress(Math.round((pageNum / totalPages) * 100));
       }
+
+      if (pageNum % 10 === 0 || pageNum === totalPages) {
+        logger.debug('PDFService', `Processing page ${pageNum}/${totalPages}`);
+      }
     }
 
+    logger.success('PDFService', 'Full PDF text extracted and cleaned');
     // 6. Final Polish (De-hyphenation and spacing)
     return postProcessCleaner(fullText);
 
-  } catch (error) {
-    console.error("❌ PDF Parsing Error:", error);
-    // Fallback? Or throw?
-    // If pdfjsLib via import fails, maybe try window.pdfjsLib if present?
-    // For now, let's stick to the throw.
+  } catch (error: any) {
+    logger.error('PDFService', 'PDF Parsing failed', error);
     throw new Error("Failed to parse PDF. It might be encrypted or corrupted.");
   }
 };
 
 export const extractTextFromTxt = async (file: File): Promise<string> => {
+  logger.info('PDFService', `Extracting text from TXT file: ${file.name}`);
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = (e) => resolve(postProcessCleaner(e.target?.result as string));
-    reader.onerror = (e) => reject(e);
+    reader.onload = (e) => {
+      logger.success('PDFService', 'TXT file read successfully');
+      resolve(postProcessCleaner(e.target?.result as string));
+    };
+    reader.onerror = (e) => {
+      logger.error('PDFService', 'Failed to read TXT file', e);
+      reject(e);
+    };
     reader.readAsText(file);
   });
 };

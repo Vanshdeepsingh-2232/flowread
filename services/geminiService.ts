@@ -1,52 +1,50 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Chunk } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { Genre } from './genreDetector';
+import { getChunkingSystemInstruction } from './promptFactory';
+import { logger } from '../utils/logger';
 
 const getAiClient = () => {
   if (!process.env.API_KEY) {
+    logger.error('GeminiService', "API Key is missing. Please set process.env.API_KEY.");
     throw new Error("API Key is missing. Please set process.env.API_KEY.");
   }
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
-
-// System instruction to guide the model
-const SYSTEM_INSTRUCTION = `
-You are a text formatter for a mobile reading app called FlowRead.
-** GOAL:** Create a "TikTok-style" reading experience with "Smart Metadata" to prevent context loss.
-
-** CRITICAL RULES:**
-  1. ** PACING **: 40 - 60 words / card.Never > 80. Split long paragraphs.
-2. ** FLOW **: No awkward mid - sentence breaks.
-3. ** VERBATIM **: Exact text only.
-
-** METADATA RULES(The Brain):**
-- ** chapterTitle **: The Top - Level Header(e.g., "Chapter 1", "The Alchemist", "Introduction").Persist this across cards until it changes.Infer if missing.
-- ** contextLabel **: A tiny specific context tag(e.g., "Scene: The Desert", "Topic: The Soul of the World").usage: "Type: Value".
-- ** speaker **: IF the text is dialogue, identify the speaker.
-- ** isNewScene **: Set to true ONLY if there is a distinct jump(narrative shift).
-- ** shareableQuote **: Extract the most profound / catchy sentence(if any).
-`;
 
 export const semanticChunking = async (
   textSegment: string,
   bookId: string,
   startIndex: number = 0,
   previousChapterContext?: string,
-  bookTitle?: string
+  bookTitle?: string,
+  genre: Genre = 'non_fiction'
 ): Promise<Chunk[]> => {
+  logger.info('GeminiService', `Starting semantic chunking for "${bookTitle}"`, {
+    segmentLength: textSegment.length,
+    genre,
+    startIndex
+  });
+
   const ai = getAiClient();
   const textToProcess = textSegment;
 
   if (!textToProcess || textToProcess.trim().length === 0) {
+    logger.warn('GeminiService', 'Empty text segment provided, skipping');
     return [];
   }
 
   try {
+    const systemInstruction = getChunkingSystemInstruction(genre);
+    logger.debug('GeminiService', 'System instruction generated', { genre });
+
+    logger.time('gemini-chunking');
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: `CONTEXT: Book Title: "${bookTitle || 'Unknown'}".Continuing from previous batch.Last Chapter: "${previousChapterContext || 'None'}".\n\nFormat the following text into smart reading cards: \n\n${textToProcess} `,
       config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
+        systemInstruction: systemInstruction,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
@@ -65,9 +63,13 @@ export const semanticChunking = async (
         }
       }
     });
+    logger.timeEnd('GeminiService', 'gemini-chunking');
 
     const jsonText = response.text;
-    if (!jsonText) throw new Error("No response from AI");
+    if (!jsonText) {
+      logger.error('GeminiService', 'No response text from AI');
+      throw new Error("No response from AI");
+    }
 
     const parsedData = JSON.parse(jsonText) as {
       text: string;
@@ -77,6 +79,8 @@ export const semanticChunking = async (
       isNewScene?: boolean;
       shareableQuote?: string;
     }[];
+
+    logger.success('GeminiService', `Successfully generated ${parsedData.length} chunks via AI`);
 
     // Map to our Chunk interface
     return parsedData.map((item, idx) => {
@@ -112,8 +116,8 @@ export const semanticChunking = async (
       };
     });
 
-  } catch (error) {
-    console.error("Gemini processing error:", error);
+  } catch (error: any) {
+    logger.error('GeminiService', 'Gemini processing error, falling back to basic chunking', error);
     return fallbackChunking(textToProcess, bookId, startIndex, previousChapterContext, bookTitle);
   }
 };

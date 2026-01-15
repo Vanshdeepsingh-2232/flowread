@@ -6,10 +6,10 @@ import { ArrowLeft, BookOpen, Quote, Calendar } from 'lucide-react';
 
 interface BrainBankProps {
     onBack: () => void;
-    onNavigateToChunk: (bookId: string, chunkId: string) => void;
+    onNavigate: (bookId: string, index: number) => void;
 }
 
-const BrainBank: React.FC<BrainBankProps> = ({ onBack, onNavigateToChunk }) => {
+const BrainBank: React.FC<BrainBankProps> = ({ onBack, onNavigate }) => {
     // Fetch bookmarks and enrich with Book/Chunk data
     const bookmarks = useLiveQuery(async () => {
         const items = await db.brainBank.reverse().sortBy('savedAt'); // Newest first
@@ -60,7 +60,7 @@ const BrainBank: React.FC<BrainBankProps> = ({ onBack, onNavigateToChunk }) => {
                     {bookmarks.map((item) => (
                         <div
                             key={item.id}
-                            onClick={() => onNavigateToChunk(item.bookId, item.chunkId)}
+                            onClick={() => onNavigate(item.bookId, item.chunkIndex)}
                             className="
                 group relative bg-surface border border-[var(--border-color)] 
                 rounded-2xl p-6 cursor-pointer

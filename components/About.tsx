@@ -25,9 +25,18 @@ const About: React.FC<AboutProps> = ({ onBack }) => {
             </div>
 
             <div className="px-6 py-12 max-w-4xl mx-auto space-y-12">
+                {/* Logo Hero */}
+                <div className="flex justify-center mb-8">
+                    <img
+                        src="/logo2.svg"
+                        alt="FlowRead Logo"
+                        className="h-24 w-24"
+                    />
+                </div>
+
                 {/* Mission */}
                 <section>
-                    <h2 className="text-3xl font-bold text-text mb-4">Our Mission</h2>
+                    <h2 className="text-3xl font-bold text-text mb-4 text-center">Our Mission</h2>
                     <p className="text-lg text-muted leading-relaxed">
                         FlowRead is on a mission to revolutionize digital reading. We believe that books
                         deserve better than endless scrolling and cluttered interfaces. By combining

@@ -8,11 +8,12 @@ interface SettingsModalProps {
     settings: UserSettings;
     onUpdateSettings: (newSettings: UserSettings) => void;
     onClearCache: () => void;
-    storageUsageMB: number;
+    onExportHighlights: () => void;
+    storageUsedMB: number;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({
-    isOpen, onClose, settings, onUpdateSettings, onClearCache, storageUsageMB
+    isOpen, onClose, settings, onUpdateSettings, onClearCache, onExportHighlights, storageUsedMB
 }) => {
     if (!isOpen) return null;
 
@@ -21,15 +22,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     };
 
     const themes: { id: Theme; label: string; color: string }[] = [
-        { id: 'midnight', label: 'Midnight', color: 'bg-[#000000]' },
-        { id: 'slate', label: 'Slate', color: 'bg-[#1e293b]' },
-        { id: 'paper', label: 'Paper', color: 'bg-[#fef3c7]' },
+        { id: 'midnight', label: 'Midnight', color: 'bg-[#020617]' },
+        { id: 'slate', label: 'Slate', color: 'bg-[#0f172a]' },
+        { id: 'paper', label: 'Paper', color: 'bg-[#fdfbf7]' },
         { id: 'daylight', label: 'Daylight', color: 'bg-[#ffffff]' },
+        { id: 'coffee', label: 'Coffee', color: 'bg-[#231e18]' },
     ];
 
     const fonts: { id: FontFamily; label: string }[] = [
-        { id: 'sans', label: 'Sans' },
-        { id: 'serif', label: 'Serif' },
+        { id: 'quicksand', label: 'Quicksand' },
+        { id: 'sans', label: 'Modern Sans' },
+        { id: 'serif', label: 'Classic Serif' },
         { id: 'dyslexic', label: 'Dyslexic' },
     ];
 
@@ -223,7 +226,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             <div>
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-sm font-bold flex items-center gap-2"><HardDrive size={14} /> Storage Usage</span>
-                                    <span className="text-xs font-mono text-muted">{storageUsageMB.toFixed(1)} MB</span>
+                                    <span className="text-xs font-mono text-muted">{storageUsedMB.toFixed(1)} MB</span>
                                 </div>
                                 <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                                     <div className="h-full bg-emerald-500 w-[20%]" />
@@ -232,7 +235,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
-                                <button className="flex items-center justify-center gap-2 py-2 bg-surface hover:bg-slate-100 dark:hover:bg-slate-800 border border-[var(--border-color)] rounded-xl text-xs font-bold transition">
+                                <button
+                                    onClick={onExportHighlights}
+                                    className="flex items-center justify-center gap-2 py-2 bg-surface hover:bg-slate-100 dark:hover:bg-slate-800 border border-[var(--border-color)] rounded-xl text-xs font-bold transition"
+                                >
                                     <Download size={14} /> Export Data
                                 </button>
                                 <button

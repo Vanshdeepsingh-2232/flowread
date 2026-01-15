@@ -13,9 +13,10 @@ interface LibraryProps {
   onOpenSidebar: () => void;
   processingState: { active: boolean, message: string, progress: number };
   onNavigate: (page: 'features' | 'about') => void;
+  onNavigateToProfile?: () => void;
 }
 
-const Library: React.FC<LibraryProps> = ({ onSelectBook, onUploadFile, onOpenSidebar, processingState, onNavigate }) => {
+const Library: React.FC<LibraryProps> = ({ onSelectBook, onUploadFile, onOpenSidebar, processingState, onNavigate, onNavigateToProfile }) => {
   // Sort books by lastReadTime if available, or just by dateAdded. 
   // Ideally, identifying "Currently Reading" is the most recently accessed one.
   // For now, let's assume the first one in the list (newest added) is Current.
@@ -79,26 +80,14 @@ const Library: React.FC<LibraryProps> = ({ onSelectBook, onUploadFile, onOpenSid
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <Header onNavigate={onNavigate} />
+      <Header
+        onNavigate={onNavigate}
+        onNavigateToProfile={onNavigateToProfile}
+        onOpenSidebar={onOpenSidebar}
+      />
 
       <div className="flex-1 p-6 md:p-10 max-w-5xl mx-auto w-full transition-colors duration-300">
 
-        {/* Header */}
-        <header className="mb-10 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-text flex items-center gap-3">
-              <BrainCircuit className="text-primary" />
-              FlowRead
-            </h1>
-            <p className="text-muted mt-2 text-sm">AI-powered semantic reading engine</p>
-          </div>
-          <button
-            onClick={onOpenSidebar}
-            className="p-3 bg-surface border border-slate-700/20 rounded-full text-text hover:bg-primary/20 transition shadow-sm"
-          >
-            <Menu size={24} />
-          </button>
-        </header>
 
         {/* Currently Reading Section */}
         <section className="mb-12">

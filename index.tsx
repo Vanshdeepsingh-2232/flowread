@@ -1,6 +1,11 @@
 import React, { Component, ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
+import './index.css';
 import App from './App';
+import { AuthProvider } from './context/AuthContext';
+import { logger } from './utils/logger';
+
+logger.info('System', 'Application bootstrapping started');
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -22,7 +27,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   componentDidCatch(error: any, errorInfo: any) {
-    console.error("Uncaught error:", error, errorInfo);
+    logger.error('System', "Uncaught crash error", { error, errorInfo });
   }
 
   render() {
@@ -46,11 +51,15 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
+logger.info('System', 'Mounting React root');
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </ErrorBoundary>
   </React.StrictMode>
 );
+logger.success('System', 'React root rendered');
