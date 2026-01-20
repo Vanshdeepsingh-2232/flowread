@@ -2,7 +2,7 @@ export interface Book {
   id: string;
   title: string;
   author: string;
-  fileType: 'pdf' | 'txt' | 'epub';
+  fileType: 'pdf' | 'txt' | 'epub' | 'web_article';
   totalChunks: number;
   lastReadIndex: number;
   dateAdded: number;
@@ -56,6 +56,7 @@ export enum AppState {
   STATS = 'STATS',
   FEATURES = 'FEATURES',
   ABOUT = 'ABOUT',
+  WEB_READER = 'WEB_READER',
 }
 
 // --- User Settings & Preferences ---

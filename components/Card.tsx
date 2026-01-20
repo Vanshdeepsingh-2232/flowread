@@ -1,4 +1,5 @@
 import React, { useRef, useState, useCallback, useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Chunk, UserSettings } from '../types';
 import { Heart, Clock, Share2, Check } from 'lucide-react';
 
@@ -66,17 +67,6 @@ const Card: React.FC<CardProps> = ({ chunk, onFavorite, isActive, isBookmarked, 
       case 'sans': default: return 'font-sans';
     }
   };
-
-  // Parse text to bold quotes
-  const renderedText = useMemo(() => {
-    const parts = chunk.text.split(/([“"”][^“"”]*[“"”])/g);
-    return parts.map((part, index) => {
-      if (part.startsWith('“') || part.startsWith('"') || part.startsWith('”')) {
-        return <span key={index} className="font-bold italic text-primary opacity-90">{part}</span>;
-      }
-      return <span key={index}>{part}</span>;
-    });
-  }, [chunk.text]);
 
   // Robust Chapter Title Logic
   const displayChapter = useMemo(() => {
@@ -154,9 +144,23 @@ const Card: React.FC<CardProps> = ({ chunk, onFavorite, isActive, isBookmarked, 
             </div>
           )}
 
-          <p className={`${getFontFamily()} ${getTextStyles()} text-text text-left tracking-wide font-light select-none transition-all duration-300`}>
-            {renderedText}
-          </p>
+          <div className={`${getFontFamily()} ${getTextStyles()} text-text text-left tracking-wide font-light select-none transition-all duration-300 prose prose-slate dark:prose-invert max-w-none`}>
+            <ReactMarkdown
+              components={{
+                p: ({ node, ...props }) => <p className="mb-4 last:mb-0" {...props} />,
+                strong: ({ node, ...props }) => <span className="font-bold text-primary opacity-90" {...props} />,
+                em: ({ node, ...props }) => <span className="italic opacity-80" {...props} />,
+                h1: ({ node, ...props }) => <h3 className="text-xl font-bold mb-2 mt-4" {...props} />,
+                h2: ({ node, ...props }) => <h4 className="text-lg font-bold mb-2 mt-3" {...props} />,
+                h3: ({ node, ...props }) => <h5 className="text-base font-bold mb-1 mt-2" {...props} />,
+                li: ({ node, ...props }) => <li className="ml-4 list-disc" {...props} />,
+                blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-primary/50 pl-4 italic my-4 opacity-80" {...props} />,
+                code: ({ node, ...props }) => <code className="bg-slate-800/20 rounded px-1 py-0.5 text-[0.8em] font-mono" {...props} />
+              }}
+            >
+              {chunk.text}
+            </ReactMarkdown>
+          </div>
         </div>
 
         {/* Footer: State & Time & Actions */}

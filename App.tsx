@@ -18,6 +18,9 @@ import { useAuth } from './context/AuthContext';
 import { useBooks } from './hooks/useBooks';
 import { uploadBookToCloud } from './services/firebaseService';
 import { detectGenre } from './services/genreDetector';
+import WebReaderInput from './components/WebReaderInput';
+import { fetchAndParseArticle } from './services/webExtractor';
+import { cleanWebHtml } from './services/geminiService';
 
 // Lazy Imports (Load only when needed)
 const ReaderView = React.lazy(() => import('./components/ReaderView'));
@@ -287,6 +290,90 @@ const App: React.FC = () => {
     }
   };
 
+  // Handle URL Article Processing
+  const handleUrlSubmit = async (url: string) => {
+    logger.info('App', `Starting article extraction for: ${url}`);
+    setProcessingState({ active: true, message: 'Fetching article...', progress: 20 });
+
+    try {
+      let article = await fetchAndParseArticle(url);
+
+      if (!article.content || article.content.length < 50) {
+        throw new Error('Article content is too short or empty');
+      }
+
+      // ---------------------------------------------------------
+      // AI Cleaning Step (If raw content returned)
+      // ---------------------------------------------------------
+      if (article.isRaw) {
+        setProcessingState({ active: true, message: 'AI is reading the page...', progress: 40 });
+        try {
+          const aiCleaned = await cleanWebHtml(article.content);
+          article = {
+            ...article,
+            title: aiCleaned.title || article.title,
+            content: aiCleaned.content,
+            textContent: aiCleaned.content,
+            byline: aiCleaned.author !== "Unknown" ? aiCleaned.author : article.byline,
+            isRaw: false
+          };
+          logger.success('App', 'AI successfully cleaned the raw content');
+        } catch (err) {
+          logger.warn('App', 'AI cleaning failed, using raw content as fallback', err);
+        }
+      }
+
+      setProcessingState({ active: true, message: 'Analyzing content...', progress: 60 });
+      const genre = await detectGenre(article.textContent);
+
+      // Smart Chunking
+      setProcessingState({ active: true, message: 'Creating reading cards...', progress: 80 });
+      const bookId = uuidv4();
+
+      const chunks = await semanticChunking(
+        article.textContent,
+        bookId,
+        0,
+        undefined,
+        article.title,
+        genre
+      );
+
+      const newBook: Book = {
+        id: bookId,
+        title: article.title,
+        author: article.byline || article.siteName,
+        fileType: 'web_article',
+        dateAdded: Date.now(),
+        lastReadIndex: 0,
+        totalChunks: chunks.length,
+        processedCharCount: article.textContent.length,
+        rawContent: article.textContent,
+        genre: genre
+      };
+
+      // Save to DB
+      await db.transaction('rw', db.books, db.chunks, async () => {
+        await db.books.add(newBook);
+        await db.chunks.bulkAdd(chunks);
+      });
+
+      // Cloud Sync
+      if (user) {
+        uploadBookToCloud(user.uid, { ...newBook, chunks }).catch(console.error);
+      }
+
+      setProcessingState({ active: false, message: '', progress: 100 });
+      setCurrentBook(newBook);
+      setAppState(AppState.READING);
+
+    } catch (error: any) {
+      logger.error('App', 'Article extraction failed', error);
+      showError(error.message || "Failed to fetch article.");
+      setProcessingState({ active: false, message: '', progress: 0 });
+    }
+  };
+
   // Cleanup duplicate chunks (same index) keeping the one with latest ID maybe? 
   // Actually usually we want to keep one.
   const cleanupDuplicateChunks = async (bookId: string) => {
@@ -448,6 +535,15 @@ const App: React.FC = () => {
                 onThemeChange={(theme) => setSettings({ ...settings, theme })}
               />;
 
+            case AppState.WEB_READER:
+              return (
+                <WebReaderInput
+                  onBack={handleBackToLibrary}
+                  onSubmit={(url) => handleUrlSubmit(url)}
+                  processing={processingState.active}
+                />
+              );
+
             case AppState.STATS:
               return <Stats onBack={handleBackToLibrary} />;
 
@@ -499,6 +595,10 @@ const App: React.FC = () => {
           onClearCache={handleClearCache}
           onExportHighlights={handleExportHighlights}
           storageUsedMB={storageEstimate || 0}
+          onTriggerWebReader={() => {
+            setIsSettingsOpen(false);
+            setAppState(AppState.WEB_READER);
+          }}
         />
 
         {/* Main Content */}

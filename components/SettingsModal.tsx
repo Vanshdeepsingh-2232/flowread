@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Moon, Sun, Type, Smartphone, HardDrive, Download, Trash2, Eye, EyeOff, Minus, Plus } from 'lucide-react';
+import { X, Moon, Sun, Type, Smartphone, HardDrive, Download, Trash2, Eye, EyeOff, Minus, Plus, Globe, ArrowRight } from 'lucide-react';
 import { UserSettings, Theme, FontFamily, ScrollMode, DensityMode, ProgressBarStyle } from '../types';
 
 interface SettingsModalProps {
@@ -10,10 +10,11 @@ interface SettingsModalProps {
     onClearCache: () => void;
     onExportHighlights: () => void;
     storageUsedMB: number;
+    onTriggerWebReader?: () => void;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({
-    isOpen, onClose, settings, onUpdateSettings, onClearCache, onExportHighlights, storageUsedMB
+    isOpen, onClose, settings, onUpdateSettings, onClearCache, onExportHighlights, storageUsedMB, onTriggerWebReader
 }) => {
     if (!isOpen) return null;
 
@@ -249,6 +250,33 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 </button>
                             </div>
                         </div>
+                    </section>
+
+                    <hr className="border-[var(--border-color)]" />
+
+                    {/* 5. New Features */}
+                    <section>
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-muted mb-4">New Features</h3>
+                        <button
+                            onClick={() => {
+                                onClose();
+                                if (onTriggerWebReader) {
+                                    onTriggerWebReader();
+                                }
+                            }}
+                            className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 hover:from-indigo-500/20 hover:to-purple-500/20 border border-indigo-500/20 rounded-xl transition-all group"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-indigo-500/20 text-indigo-500 rounded-lg group-hover:scale-110 transition-transform">
+                                    <Globe size={18} />
+                                </div>
+                                <div className="text-left">
+                                    <h4 className="font-bold text-sm">Article Mode</h4>
+                                    <p className="text-[10px] text-muted">Read web articles distraction-free</p>
+                                </div>
+                            </div>
+                            <ArrowRight size={16} className="text-muted group-hover:text-indigo-500 transition-colors" />
+                        </button>
                     </section>
 
                 </div>

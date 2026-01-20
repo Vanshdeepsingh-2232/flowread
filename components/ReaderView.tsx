@@ -50,16 +50,11 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
 
   // Helper to scroll
   const scrollToIndex = (index: number, behavior: ScrollBehavior = 'smooth') => {
-    if (containerRef.current && index >= 0) {
-      const wrapper = containerRef.current.firstElementChild;
-      if (wrapper) {
-        // +1 for top spacer
-        const target = wrapper.children[index + 1] as HTMLElement;
-        if (target) {
-          target.scrollIntoView({ behavior, block: 'center', inline: 'center' });
-          setActiveIndex(index);
-        }
-      }
+    // Use ID-based lookup for reliability
+    const target = document.getElementById(`chunk-card-${index}`);
+    if (target) {
+      target.scrollIntoView({ behavior, block: 'center', inline: 'center' });
+      setActiveIndex(index);
     }
   };
 
@@ -89,6 +84,12 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
     let minDistance = Infinity;
 
     // Skip first and last child (spacers)
+    // We cannot trust children layout if spacers are dynamic sizes or hidden
+    // But since we control layout: 
+    // Child 0 = spacer
+    // Child 1..N = Cards
+    // Child N+1 = spacer
+
     for (let i = 1; i < children.length - 1; i++) {
       const child = children[i];
       const rect = child.getBoundingClientRect();
@@ -103,22 +104,25 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
     }
 
     if (closestIndex !== activeIndex) {
-      setActiveIndex(closestIndex);
+      // Bound check
+      if (closestIndex >= 0 && closestIndex < chunks.length) {
+        setActiveIndex(closestIndex);
 
-      const newFurthest = Math.max(closestIndex, furthestIndex);
-      if (closestIndex > furthestIndex) {
-        setFurthestIndex(newFurthest);
-        updateReadingStreak(); // Update streak when user makes progress
-      }
+        const newFurthest = Math.max(closestIndex, furthestIndex);
+        if (closestIndex > furthestIndex) {
+          setFurthestIndex(newFurthest);
+          updateReadingStreak(); // Update streak when user makes progress
+        }
 
-      db.books.update(book.id, {
-        lastReadIndex: closestIndex,
-        furthestReadIndex: newFurthest
-      });
+        db.books.update(book.id, {
+          lastReadIndex: closestIndex,
+          furthestReadIndex: newFurthest
+        });
 
-      // Haptic Feedback
-      if (settings.hapticsEnabled && window.navigator.vibrate) {
-        window.navigator.vibrate(5);
+        // Haptic Feedback
+        if (settings.hapticsEnabled && window.navigator.vibrate) {
+          window.navigator.vibrate(5);
+        }
       }
     }
   };
@@ -233,21 +237,26 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
     if (storyStartIndex > -1) scrollToIndex(storyStartIndex);
   };
 
-  const handleNextChapter = () => {
+  const handleNextChapter = async () => {
     if (!chunks || isLoadingMore) return;
+
+    // 1. Try to find actual next chapter start
     const currentChap = chunks[activeIndex]?.chapterTitle;
     const nextChapIndex = chunks.findIndex((c, i) => i > activeIndex && c.chapterTitle !== currentChap);
 
     if (nextChapIndex !== -1) {
       scrollToIndex(nextChapIndex);
     } else {
-      // Fallback: If no explicit next chapter found
+      // 2. Fallback: If no explicit next chapter found (e.g. one long chapter)
       const hasMoreContent = (book.processedCharCount || 0) < (book.rawContent?.length || 0);
 
+      // If we can load more from disk/AI
+      // Only trigger if we are somewhat close to the end, to prevent spamming
       if (hasMoreContent) {
-        if (onLoadMore) onTriggerLoadMore();
-      } else if (activeIndex < chunks.length - 1) {
-        // If no more content to load, just "Fast Forward" 20 cards
+        if (onLoadMore) await onTriggerLoadMore();
+      }
+      // If fully loaded, just Fast Forward
+      else if (activeIndex < chunks.length - 1) {
         scrollToIndex(Math.min(chunks.length - 1, activeIndex + 20));
       }
     }
@@ -262,16 +271,13 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
   if (!chunks) return <div className="h-screen flex items-center justify-center text-muted">Loading Book...</div>;
 
   const timeRemaining = Math.ceil((chunks.length - activeIndex) / 4);
-  const hasContent = !!book.rawContent;
   const contentLeft = (book.rawContent?.length || 0) - (book.processedCharCount || 0);
   const hasMoreContent = contentLeft > 0;
 
   const showSkipIntro = storyStartIndex > 0 && activeIndex < storyStartIndex;
   const showResume = activeIndex < furthestIndex - 2;
-  const showNextChapter = true;
-
-  // ...
-
+  const isAtEnd = chunks && activeIndex >= chunks.length - 1;
+  const showNextChapter = !isAtEnd || hasMoreContent;
 
   const getCapsuleStyles = () => {
     switch (settings.theme) {
@@ -391,10 +397,11 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
             {showNextChapter && (
               <button
                 onClick={handleNextChapter}
-                className="px-3 py-1.5 bg-surface backdrop-blur border border-white/10 text-text rounded-full text-xs font-bold shadow-lg flex items-center gap-1 hover:bg-surface/80 transition"
+                disabled={isLoadingMore}
+                className={`px-3 py-1.5 bg-surface backdrop-blur border border-white/10 text-text rounded-full text-xs font-bold shadow-lg flex items-center gap-1 transition ${isLoadingMore ? 'opacity-50 cursor-wait' : 'hover:bg-surface/80'}`}
               >
-                <FastForward size={14} />
-                Next Chapter
+                {isLoadingMore ? <div className="animate-spin w-3 h-3 border-2 border-primary border-t-transparent rounded-full" /> : <FastForward size={14} />}
+                {isLoadingMore ? 'Loading...' : 'Next Chapter'}
               </button>
             )}
           </div>
@@ -498,7 +505,11 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
           <div className={`${isHorizontal ? 'w-[5vw] h-full shrink-0' : 'h-[5vh] w-full shrink-0'}`} />
 
           {chunks.map((chunk, idx) => (
-            <div key={chunk.id} className={`${isHorizontal ? 'h-full w-screen shrink-0 flex items-center justify-center snap-center' : 'w-full'}`}>
+            <div
+              key={chunk.id}
+              id={`chunk-card-${idx}`}
+              className={`${isHorizontal ? 'h-full w-screen shrink-0 flex items-center justify-center snap-center' : 'w-full'}`}
+            >
               <Card
                 chunk={chunk}
                 isActive={idx === activeIndex}

@@ -13,6 +13,59 @@ const getAiClient = () => {
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
+export const cleanWebHtml = async (rawHtml: string): Promise<{ title: string; author: string; content: string }> => {
+  logger.info('GeminiService', `Starting HTML cleaning via AI using gemini-2.0-flash-exp`);
+  const ai = getAiClient();
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash-exp',
+      contents: `You are an expert web scraper and content extractor.
+      
+      Task: Extract the main article content from the following raw HTML or text.
+      
+      Rules:
+      1. IGNORE navigation menus, footers, sidebars, ads, and "read more" links.
+      2. Extract the MAIN article title.
+      3. Extract the Author name (if found, otherwise "Unknown").
+      4. Extract the full article content in clean, valid Markdown.
+      5. Preserve code blocks, headers, and lists.
+      6. Remove any "Title:..." or metadata headers from the content body itself.
+
+      Raw Input:
+      ${rawHtml.slice(0, 100000)} 
+      
+      Output JSON Schema:
+      {
+        "title": "Article Title",
+        "author": "Author Name",
+        "content": "# Title \n\n Content..."
+      }`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            author: { type: Type.STRING },
+            content: { type: Type.STRING }
+          },
+          required: ["title", "content"]
+        }
+      }
+    });
+
+    const jsonText = response.text;
+    if (!jsonText) throw new Error("No response from AI cleaner");
+
+    return JSON.parse(jsonText);
+
+  } catch (error) {
+    logger.error('GeminiService', 'AI Cleaning failed', error);
+    throw error;
+  }
+};
+
 export const semanticChunking = async (
   textSegment: string,
   bookId: string,
