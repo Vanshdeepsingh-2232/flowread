@@ -144,7 +144,7 @@ const Card: React.FC<CardProps> = ({ chunk, onFavorite, isActive, isBookmarked, 
             </div>
           )}
 
-          <div className={`${getFontFamily()} ${getTextStyles()} text-text text-left tracking-wide font-light select-none transition-all duration-300 prose prose-slate dark:prose-invert max-w-none`}>
+          <div className={`${getFontFamily()} ${getTextStyles()} ${settings.isBold ? 'font-bold' : 'font-light'} text-text text-left tracking-wide ${settings.debugMode ? 'select-text' : 'select-none'} transition-all duration-300 prose prose-slate dark:prose-invert max-w-none`}>
             <ReactMarkdown
               components={{
                 p: ({ node, ...props }) => <p className="mb-4 last:mb-0" {...props} />,

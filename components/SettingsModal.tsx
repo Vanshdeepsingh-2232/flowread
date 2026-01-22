@@ -117,6 +117,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     <span className="text-xl">Aa</span>
                                 </div>
                             </div>
+
+                            {/* Bold Text Toggle */}
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-semibold">Bold Text</span>
+                                <Toggle
+                                    checked={settings.isBold}
+                                    onChange={(checked) => update('isBold', checked)}
+                                />
+                            </div>
                         </div>
                     </section>
 
@@ -277,6 +286,25 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             </div>
                             <ArrowRight size={16} className="text-muted group-hover:text-indigo-500 transition-colors" />
                         </button>
+                    </section>
+
+                    <hr className="border-[var(--border-color)]" />
+
+                    {/* 6. Developer Options */}
+                    <section>
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-muted mb-4">Developer</h3>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <span className="text-sm font-semibold">Debug Mode</span>
+                                    <p className="text-[10px] text-muted">Enable text selection & analysis tools</p>
+                                </div>
+                                <Toggle
+                                    checked={settings.debugMode}
+                                    onChange={(checked) => update('debugMode', checked)}
+                                />
+                            </div>
+                        </div>
                     </section>
 
                 </div>

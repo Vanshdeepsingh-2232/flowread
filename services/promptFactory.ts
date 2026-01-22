@@ -11,10 +11,17 @@ export function getChunkingSystemInstruction(genre: Genre = 'non_fiction'): stri
     Your Goal: Split the provided text into logical, substantive "chunks" or "cards".
     
     ** CRITICAL RULES:**
-    1. ** PACING **: Optimize for 200-400 words per card. Aim for "Page-Like" density, not "Tweet-Like".
-    2. ** DENSITY **: Combine 3-5 related paragraphs into a single card. Do NOT split short paragraphs.
-    3. ** FLOW **: Each card must feel like a complete thought or scene. No jarring mid-sentence/mid-paragraph breaks.
-    4. ** VERBATIM **: Exact text only.
+    1. ** PACING **: STRICTLY 50-80 words MAX per card. NEVER exceed 100 words. Break aggressively but smartly.
+    2. ** DENSITY **: 1 paragraph per card. If a paragraph is long, split it into multiple cards.
+    3. ** FLOW **: Each card should be one quick thought. Prefer shorter over "complete".
+    4. ** VERBATIM **: Exact text only. DO NOT rewrite, summarize, or simplify. 
+    5. ** PRESERVATION **: Preserve the original author's voice, tone, and wording 100%. 
+    
+    ** ZERO TAMPERING POLICY:** 
+    - You are a FORMATTER, you are presenting the book in different style for the reading experience,not a writer. 
+    - If the text is complex, keep it complex.
+    - If the text is archaic, keep it archaic.
+    - NEVER change a single word of the story content.
     
     ** METADATA RULES (The Brain):**
     - ** chapterTitle **: The Top-Level Header. Persist across cards until it changes.
@@ -28,7 +35,7 @@ export function getChunkingSystemInstruction(genre: Genre = 'non_fiction'): stri
   const rules = {
     fiction: `
       ** STRICT RULES FOR FICTION:**
-      - ** Scene Integrity:** Keep entire short-to-medium scenes in ONE card. Do not fragment the narrative.
+      - ** Scene Integrity:** Keep entire short-to-medium scenes in ONE card. Do not fragment the narrative, But do it smartly dont make too long chunks.
       - ** Dialogue:** Keep long conversations together. Never split a back-and-forth exchange unless it spans pages.
       - ** Immersion:** The goal is to let the user read a significant portion of the story before swiping.
     `,

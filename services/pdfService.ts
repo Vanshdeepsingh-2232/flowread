@@ -172,10 +172,19 @@ function postProcessCleaner(text: string): string {
     // Looks for: Word char + hyphen + whitespace + newline + whitespace + Word char
     .replace(/(\w+)-\s*[\r\n]+\s*(\w+)/g, '$1$2')
 
-    // 2. Remove multiple spaces
+    // 2. Fix broken words: "S ANTIAGO" -> "SANTIAGO", "g reat" -> "great"
+    // This regex finds patterns where single letters are separated by spaces
+    // and joins them together. It's aggressive but handles most PDF extraction artifacts.
+    .replace(/\b([A-Za-z])\s+(?=[A-Za-z]\b)/g, '$1')
+
+    // 3. Fix remaining single-letter splits: "T HE" -> "THE"
+    // More aggressive: any uppercase letter followed by space + uppercase letter
+    .replace(/([A-Z])\s+([A-Z])(?=[A-Z\s])/g, '$1$2')
+
+    // 4. Remove multiple spaces
     .replace(/[ \t]+/g, ' ')
 
-    // 3. Fix paragraph breaks
+    // 5. Fix paragraph breaks
     // If there are 3+ newlines, treat as section break
     .replace(/\n{3,}/g, '\n\n')
 

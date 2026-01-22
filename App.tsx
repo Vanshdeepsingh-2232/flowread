@@ -16,7 +16,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useAuth } from './context/AuthContext';
 import { useBooks } from './hooks/useBooks';
-import { uploadBookToCloud } from './services/firebaseService';
+import { uploadBookToCloud, getUserSettings, saveUserSettings } from './services/firebaseService';
 import { detectGenre } from './services/genreDetector';
 import WebReaderInput from './components/WebReaderInput';
 import { fetchAndParseArticle } from './services/webExtractor';
@@ -41,16 +41,18 @@ const BATCH_SIZE = 20000; // Characters to process per batch
 
 // Default Settings
 const DEFAULT_SETTINGS: UserSettings = {
-  theme: 'midnight',
+  theme: 'paper',
   fontFamily: 'quicksand',
   textSize: 3,
+  isBold: false,
   scrollMode: 'vertical',
   density: 'standard',
   autoScrollSpeed: 0,
   progressBarStyle: 'segmented',
   hapticsEnabled: true,
   showContextTags: true,
-  isLeftHanded: false
+  isLeftHanded: false,
+  debugMode: false
 };
 
 const App: React.FC = () => {
@@ -82,26 +84,53 @@ const App: React.FC = () => {
   // Settings State
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
 
-  // Load Settings
+  // Load Settings (Local + Cloud Sync)
   useEffect(() => {
-    logger.info('App', 'Loading user settings from localStorage');
-    const saved = localStorage.getItem('flowread-settings-v1');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setSettings({ ...DEFAULT_SETTINGS, ...parsed });
-        logger.success('App', 'Settings loaded successfully', parsed);
-      } catch (e) {
-        logger.error('App', 'Failed to parse settings', e);
+    const loadSettings = async () => {
+      logger.info('App', 'Loading user settings...');
+
+      // 1. Load local settings first (fast)
+      const saved = localStorage.getItem('flowread-settings-v1');
+      let localSettings = DEFAULT_SETTINGS;
+      if (saved) {
+        try {
+          localSettings = { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+          setSettings(localSettings);
+          logger.success('App', 'Local settings loaded');
+        } catch (e) {
+          logger.error('App', 'Failed to parse local settings', e);
+        }
       }
-    } else {
-      logger.info('App', 'No saved settings found, using defaults');
-    }
-  }, []);
+
+      // 2. If user is logged in, try to fetch cloud settings
+      if (user?.uid) {
+        try {
+          const cloudSettings = await getUserSettings(user.uid);
+          if (cloudSettings) {
+            // Cloud takes priority, merge with defaults for any missing keys
+            const mergedSettings = { ...DEFAULT_SETTINGS, ...cloudSettings };
+            setSettings(mergedSettings);
+            // Update local storage with cloud settings
+            localStorage.setItem('flowread-settings-v1', JSON.stringify(mergedSettings));
+            logger.success('App', 'Cloud settings synced to local');
+          }
+        } catch (e) {
+          logger.warn('App', 'Could not load cloud settings, using local', e);
+        }
+      }
+    };
+
+    loadSettings();
+  }, [user?.uid]);
 
   // Persist Settings & Apply Global Theme/Font
   useEffect(() => {
     localStorage.setItem('flowread-settings-v1', JSON.stringify(settings));
+
+    // Sync to cloud if user is logged in
+    if (user?.uid) {
+      saveUserSettings(user.uid, settings);
+    }
 
     // Apply Theme Class
     const root = document.documentElement;
@@ -109,7 +138,7 @@ const App: React.FC = () => {
     root.classList.add(settings.theme);
 
     // Apply Global Font Var if needed, or handle in ReaderView
-  }, [settings]);
+  }, [settings, user?.uid]);
 
   // Storage calculation (Rough estimate)
   // In a real app, we'd query navigator.storage or iterate IndexedDB
@@ -268,16 +297,16 @@ const App: React.FC = () => {
 
       logger.success('App', `Book "${newBook.title}" processed and saved locally`);
 
-      // 5. Cloud Sync (Background)
-      if (user) {
-        logger.info('App', 'Initiating background cloud sync');
-        // Critical Fix: Pass chunks explicitly as they are not in the 'Book' type
-        uploadBookToCloud(user.uid, { ...newBook, chunks })
-          .then(() => logger.success('App', '☁️ Uploaded to cloud'))
-          .catch((err) => logger.error('App', 'Cloud upload failed', err));
-      } else {
-        logger.warn('App', 'User not logged in - Book saved locally only');
-      }
+      // 5. Cloud Sync (Background) - TEMPORARILY DISABLED (CORS issue)
+      // TODO: Re-enable after configuring Firebase Storage CORS
+      // if (user) {
+      //   logger.info('App', 'Initiating background cloud sync');
+      //   uploadBookToCloud(user.uid, { ...newBook, chunks })
+      //     .then(() => logger.success('App', '☁️ Uploaded to cloud'))
+      //     .catch((err) => logger.error('App', 'Cloud upload failed', err));
+      // } else {
+      //   logger.warn('App', 'User not logged in - Book saved locally only');
+      // }
 
       setProcessingState({ active: false, message: '', progress: 100 });
       setCurrentBook(newBook);
@@ -358,10 +387,10 @@ const App: React.FC = () => {
         await db.chunks.bulkAdd(chunks);
       });
 
-      // Cloud Sync
-      if (user) {
-        uploadBookToCloud(user.uid, { ...newBook, chunks }).catch(console.error);
-      }
+      // Cloud Sync - TEMPORARILY DISABLED (CORS issue)
+      // if (user) {
+      //   uploadBookToCloud(user.uid, { ...newBook, chunks }).catch(console.error);
+      // }
 
       setProcessingState({ active: false, message: '', progress: 100 });
       setCurrentBook(newBook);

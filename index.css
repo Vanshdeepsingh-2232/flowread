@@ -7,6 +7,8 @@
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-border: var(--border-color);
+  --color-surface-accent: var(--surface-accent);
+  --color-shadow: var(--shadow-color);
 
   --font-sans: "Quicksand", sans-serif;
   --font-serif: "Literata", serif;
@@ -38,7 +40,9 @@
   --muted: #64748b;
   --border-color: #1e293b;
   --primary: #38bdf8;
-  /* Switched to Sky Blue for a premium feel */
+  --surface-accent: #1e293b;
+  --shadow-color: #000000;
+  /* Slate-800 */
 }
 
 /* Slate Theme */
@@ -49,6 +53,9 @@
   --muted: #94a3b8;
   --border-color: #334155;
   --primary: #38bdf8;
+  --surface-accent: #334155;
+  --shadow-color: #000000;
+  /* Slate-700 */
 }
 
 /* Paper Theme */
@@ -59,7 +66,9 @@
   --muted: #928374;
   --border-color: #d5c4a1;
   --primary: #ea580c;
-  /* Orange-ish */
+  --surface-accent: #eaddcf;
+  --shadow-color: #8b5e34;
+  /* Mutted Beige */
 }
 
 /* Daylight Theme */
@@ -70,17 +79,22 @@
   --muted: #6b7280;
   --border-color: #e5e7eb;
   --primary: #2563eb;
+  --surface-accent: #e5e7eb;
+  --shadow-color: #94a3b8;
+  /* Gray-200 */
 }
 
 /* Coffee Theme */
 .coffee {
   --background: #231e18;
-  /* Dark brown */
   --surface: #362e26;
   --text: #dbc8b6;
   --muted: #9a8a7c;
   --border-color: #4e4236;
   --primary: #dcb188;
+  --surface-accent: #4e4236;
+  --shadow-color: #000000;
+  /* Darker Coffee */
 }
 
 body {

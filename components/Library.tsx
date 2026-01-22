@@ -130,11 +130,11 @@ const Library: React.FC<LibraryProps> = ({ onSelectBook, onUploadFile, onOpenSid
             // Active Book Card
             <div
               onClick={() => onSelectBook(currentBook)}
-              className="group relative bg-gradient-to-br from-surface to-surface/50 border border-slate-700/20 rounded-3xl p-5 md:p-8 cursor-pointer hover:border-primary/50 transition-all shadow-xl flex items-start sm:items-center gap-4 md:gap-6"
+              className="group relative bg-gradient-to-br from-surface to-surface/50 border border-border rounded-3xl p-5 md:p-8 cursor-pointer hover:border-primary/50 transition-all shadow-xl shadow-[var(--shadow-color)]/20 flex items-start sm:items-center gap-4 md:gap-6"
             >
-              <div className="w-20 h-28 md:w-24 md:h-32 bg-slate-800 rounded-lg shadow-2xl flex items-center justify-center flex-shrink-0 relative overflow-hidden">
-                <BookOpen size={40} className="text-slate-600" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="w-20 h-28 md:w-24 md:h-32 bg-surface-accent rounded-lg shadow-2xl shadow-[var(--shadow-color)]/20 flex items-center justify-center flex-shrink-0 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-t from-muted/20 to-transparent" />
+                <BookOpen size={40} className="text-primary z-10" />
               </div>
 
               <div className="flex-1 min-w-0">
@@ -152,7 +152,7 @@ const Library: React.FC<LibraryProps> = ({ onSelectBook, onUploadFile, onOpenSid
                   </button>
                 </div>
 
-                <div className="w-full bg-slate-700/20 h-1.5 md:h-2 rounded-full overflow-hidden">
+                <div className="w-full bg-muted/20 h-1.5 md:h-2 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-primary transition-all duration-500"
                     style={{ width: `${Math.min(100, Math.round(((currentBook.lastReadIndex + 1) / (currentBook.totalChunks || 1)) * 100))}%` }}
@@ -170,7 +170,7 @@ const Library: React.FC<LibraryProps> = ({ onSelectBook, onUploadFile, onOpenSid
               onClick={() => fileInputRef.current?.click()}
               className="w-full bg-surface border-2 border-dashed border-slate-700/30 rounded-3xl p-8 flex flex-col items-center justify-center min-h-[200px] cursor-pointer hover:border-primary hover:bg-primary/5 transition-all text-muted hover:text-primary group"
             >
-              <div className="p-4 bg-slate-800 rounded-full mb-4 group-hover:scale-110 transition-transform">
+              <div className="p-4 bg-surface-accent rounded-full mb-4 group-hover:scale-110 transition-transform">
                 <Plus size={32} />
               </div>
               <p className="font-medium">Tap to start reading a new book</p>
@@ -205,9 +205,9 @@ const Library: React.FC<LibraryProps> = ({ onSelectBook, onUploadFile, onOpenSid
               {/* Persistent Upload Card in Grid */}
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-surface/50 border-2 border-dashed border-slate-700/30 rounded-xl p-4 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition flex flex-col items-center justify-center text-center gap-2 group min-h-[100px]"
+                className="bg-surface/50 border-2 border-dashed border-border/60 rounded-xl p-4 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition flex flex-col items-center justify-center text-center gap-2 group min-h-[100px]"
               >
-                <div className="p-2 bg-slate-800 rounded-full group-hover:scale-110 transition-transform">
+                <div className="p-2 bg-surface-accent rounded-full group-hover:scale-110 transition-transform">
                   <Plus size={20} className="text-primary" />
                 </div>
                 <span className="text-xs font-bold text-muted group-hover:text-primary">Upload New</span>
@@ -216,14 +216,14 @@ const Library: React.FC<LibraryProps> = ({ onSelectBook, onUploadFile, onOpenSid
                 <div
                   key={book.id}
                   onClick={() => onSelectBook(book)}
-                  className="group bg-surface hover:bg-slate-700/10 transition p-4 rounded-xl border border-slate-700/10 hover:border-slate-500 cursor-pointer flex gap-4"
+                  className="group bg-surface hover:bg-surface-accent/10 transition p-4 rounded-xl border border-border/50 hover:border-border cursor-pointer flex gap-4"
                 >
-                  <div className="w-12 h-16 bg-slate-800 rounded shadow-sm flex items-center justify-center flex-shrink-0">
-                    <BookOpen size={16} className="text-slate-600" />
+                  <div className="w-12 h-16 bg-surface-accent rounded shadow-sm flex items-center justify-center flex-shrink-0">
+                    <BookOpen size={16} className="text-primary" />
                   </div>
                   <div className="flex-1 min-w-0 flex flex-col justify-center">
                     <h4 className="font-bold text-text truncate text-sm">{book.title}</h4>
-                    <div className="w-full bg-slate-700/20 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div className="w-full bg-muted/20 h-1.5 rounded-full mt-2 overflow-hidden">
                       <div
                         className="h-full bg-slate-400 group-hover:bg-primary transition-colors"
                         style={{ width: `${Math.min(100, Math.round(((book.lastReadIndex + 1) / (book.totalChunks || 1)) * 100))}%` }}

@@ -72,6 +72,7 @@ export interface UserSettings {
   theme: Theme;
   fontFamily: FontFamily;
   textSize: number; // 1-5 Scale
+  isBold: boolean;
 
   // Flow
   scrollMode: ScrollMode;
@@ -85,4 +86,7 @@ export interface UserSettings {
 
   // Accessibility
   isLeftHanded: boolean;
+
+  // Developer
+  debugMode: boolean;
 }

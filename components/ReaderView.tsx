@@ -69,6 +69,37 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
     }
   }, [chunks]);
 
+  // Keyboard Navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!chunks || chunks.length === 0) return;
+
+      const isHoriz = settings.scrollMode === 'horizontal';
+
+      if (isHoriz) {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          scrollToIndex(Math.min(chunks.length - 1, activeIndex + 1));
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          scrollToIndex(Math.max(0, activeIndex - 1));
+        }
+      } else {
+        // Vertical Mode
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+          e.preventDefault();
+          scrollToIndex(Math.min(chunks.length - 1, activeIndex + 1));
+        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          scrollToIndex(Math.max(0, activeIndex - 1));
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [chunks, activeIndex, settings.scrollMode]);
+
   // Handle Scroll to update active index
   const handleScroll = () => {
     if (!containerRef.current || !chunks) return;
@@ -247,17 +278,17 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
     if (nextChapIndex !== -1) {
       scrollToIndex(nextChapIndex);
     } else {
-      // 2. Fallback: If no explicit next chapter found (e.g. one long chapter)
+      // 2. Fallback: If no explicit next chapter found (e.g. still in Chapter 1)
+      // The user wants to "Skip" what is currently there and see what's next.
+
+      // Scroll to the very last chunk we have (Skip to end)
+      scrollToIndex(chunks.length - 1);
+
       const hasMoreContent = (book.processedCharCount || 0) < (book.rawContent?.length || 0);
 
-      // If we can load more from disk/AI
-      // Only trigger if we are somewhat close to the end, to prevent spamming
+      // If we can load more from disk/AI, trigger it
       if (hasMoreContent) {
         if (onLoadMore) await onTriggerLoadMore();
-      }
-      // If fully loaded, just Fast Forward
-      else if (activeIndex < chunks.length - 1) {
-        scrollToIndex(Math.min(chunks.length - 1, activeIndex + 20));
       }
     }
   };
@@ -341,6 +372,8 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
     }
   };
 
+
+
   return (
     <div className={`
        relative h-[100dvh] bg-background flex flex-col transition-colors duration-500 
@@ -373,7 +406,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
             <span>{timeRemaining} min left</span>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 fixed bottom-24 right-4 items-end z-[70] sm:static sm:z-auto pointer-events-auto">
             {showResume && (
               <button
                 onClick={handleResume}
@@ -410,10 +443,10 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
 
       {/* Floating Capsule Segmented Progress Bar */}
       {showProgressBar && !isMinimalProgress && (
-        <div className="absolute bottom-8 left-4 right-4 z-[60] flex justify-center pointer-events-none">
+        <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 z-[60] flex justify-center pointer-events-none px-4">
           <div
             ref={progressBarRef}
-            className={`w-full max-w-2xl backdrop-blur-md rounded-2xl p-4 flex items-center gap-1.5 pointer-events-auto touch-none transition-all duration-500 ${getCapsuleStyles()}`}
+            className={`w-[90vw] max-w-2xl backdrop-blur-md rounded-2xl p-2 sm:p-3 flex items-center gap-0.5 sm:gap-1 pointer-events-auto touch-none transition-all duration-500 overflow-hidden ${getCapsuleStyles()}`}
             onTouchStart={handleTouchMove}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -443,7 +476,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
                     ${status === 'unread' ? getUnreadColor() : ''}
                     ${isCurrent ? getActivePillStyle() : ''}
                   `}
-                  style={{ flexGrow: seg.count, minWidth: '6px' }}
+                  style={{ flexGrow: seg.count, minWidth: '2px' }}
                 >
                   {/* Precise Inner Cursor for Current Segment */}
                   {isCurrent && (
@@ -531,7 +564,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
               {isLoadingMore ? (
                 <>
                   <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                  <p className="text-primary font-medium">Synthesizing more cards...</p>
+                  <p className="text-primary font-medium">Processing next section...</p>
                 </>
               ) : hasMoreContent ? (
                 <>

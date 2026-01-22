@@ -148,3 +148,53 @@ export const saveHighlight = async (userId: string, highlightData: any) => {
         throw error;
     }
 };
+
+// ==========================================
+// ⚙️ USER SETTINGS (Cloud Sync)
+// ==========================================
+
+import { getDoc } from "firebase/firestore";
+import { UserSettings } from "../types";
+
+/**
+ * Saves user settings to Firestore.
+ */
+export const saveUserSettings = async (userId: string, settings: UserSettings): Promise<void> => {
+    logger.info('FirebaseService', `Saving settings to cloud for user: ${userId}`);
+    try {
+        const settingsRef = doc(db, "users", userId, "preferences", "settings");
+        await setDoc(settingsRef, {
+            ...settings,
+            updatedAt: serverTimestamp()
+        });
+        logger.success('FirebaseService', 'User settings synced to cloud');
+    } catch (error: any) {
+        logger.warn('FirebaseService', 'Settings sync failed (non-critical)', error);
+    }
+};
+
+/**
+ * Fetches user settings from Firestore.
+ * Returns null if no cloud settings exist.
+ */
+export const getUserSettings = async (userId: string): Promise<UserSettings | null> => {
+    logger.info('FirebaseService', `Fetching settings from cloud for user: ${userId}`);
+    try {
+        const settingsRef = doc(db, "users", userId, "preferences", "settings");
+        const snapshot = await getDoc(settingsRef);
+
+        if (snapshot.exists()) {
+            const data = snapshot.data();
+            logger.success('FirebaseService', 'Cloud settings loaded');
+            // Remove Firestore-specific fields before returning
+            const { updatedAt, ...userSettings } = data;
+            return userSettings as UserSettings;
+        }
+
+        logger.info('FirebaseService', 'No cloud settings found, using local');
+        return null;
+    } catch (error: any) {
+        logger.warn('FirebaseService', 'Failed to fetch cloud settings', error);
+        return null;
+    }
+};

@@ -14,6 +14,13 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onNavigateToProfile, onOpen
     const { currentUser, userProfile, connectionStatus } = useAuth();
     const [showAuthModal, setShowAuthModal] = useState(false);
 
+    // Auto-close modal when logged in
+    React.useEffect(() => {
+        if (currentUser) {
+            setShowAuthModal(false);
+        }
+    }, [currentUser]);
+
     return (
         <header className="w-full bg-surface/50 backdrop-blur-md border-b border-[var(--border-color)] py-4 px-6 z-50 sticky top-0">
             <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -26,7 +33,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onNavigateToProfile, onOpen
                     />
                     <div>
                         <h1 className="text-xl font-bold text-text">FlowRead</h1>
-                        <p className="text-xs text-muted leading-tight">AI-powered immersive reading</p>
+                        <p className="hidden sm:block text-xs text-muted leading-tight">AI-powered immersive reading</p>
                     </div>
 
                     {/* Connection Status Indicator */}
@@ -51,7 +58,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onNavigateToProfile, onOpen
                     </div>
 
                     {/* Auth Controls & Menu Toggle */}
-                    <div className="flex items-center gap-3 pl-6 border-l border-[var(--border-color)]">
+                    <div className="flex items-center gap-2 pl-3 sm:pl-6 border-l border-[var(--border-color)]">
                         {onOpenSidebar && (
                             <button
                                 onClick={onOpenSidebar}
@@ -63,11 +70,11 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onNavigateToProfile, onOpen
                         )}
 
                         {currentUser ? (
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 sm:gap-3">
                                 {/* User Info & Avatar */}
                                 <button
                                     onClick={onNavigateToProfile}
-                                    className="flex items-center gap-3 bg-surface border border-[var(--border-color)] rounded-full pl-1 pr-4 py-1 hover:border-primary/50 hover:bg-surface/80 transition-all cursor-pointer"
+                                    className="flex items-center gap-2 sm:gap-3 bg-surface border border-[var(--border-color)] rounded-full pl-1 pr-2 sm:pr-4 py-1 hover:border-primary/50 hover:bg-surface/80 transition-all cursor-pointer"
                                 >
                                     {/* Avatar Circle */}
                                     <div className="w-8 h-8 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
@@ -93,7 +100,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onNavigateToProfile, onOpen
 
                                 <button
                                     onClick={logoutUser}
-                                    className="p-2 bg-surface hover:bg-red-500/10 hover:text-red-500 rounded-full transition-colors border border-[var(--border-color)]"
+                                    className="p-2 bg-surface hover:bg-red-500/10 hover:text-red-500 rounded-full transition-colors border border-[var(--border-color)] hidden sm:flex"
                                     title="Logout"
                                 >
                                     <LogOut size={16} />
@@ -102,10 +109,10 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onNavigateToProfile, onOpen
                         ) : (
                             <button
                                 onClick={() => setShowAuthModal(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-full text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+                                className="flex items-center gap-2 px-3 py-2 sm:px-4 bg-primary text-white rounded-full text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all"
                             >
                                 <UserIcon size={16} />
-                                <span>Sign In</span>
+                                <span className="hidden sm:inline">Sign In</span>
                             </button>
                         )}
                     </div>

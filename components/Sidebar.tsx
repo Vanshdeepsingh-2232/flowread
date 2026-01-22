@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Home, User, Server, Settings, X, BookOpen, BarChart2 } from 'lucide-react';
+import { Home, User, Server, Settings, X, BookOpen, BarChart2, LogOut } from 'lucide-react';
 import { AppState } from '../types';
 
 interface SidebarProps {
@@ -94,8 +94,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                 key={item.id}
                 onClick={() => { onNavigate(item.id); onClose(); }}
                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-200 font-medium ${currentPage === item.id
-                    ? 'bg-primary text-white shadow-lg shadow-primary/25 scale-[1.02]'
-                    : 'text-muted hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-[1.02]'
+                  ? 'bg-primary text-white shadow-lg shadow-primary/25 scale-[1.02]'
+                  : 'text-muted hover:bg-surface-accent hover:scale-[1.02]'
                   }`}
               >
                 <item.icon size={20} />
@@ -108,10 +108,22 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="mt-auto pt-6 border-t border-[var(--border-color)]">
             <button
               onClick={() => { onOpenSettings(); onClose(); }}
-              className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-muted hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-medium"
+              className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-muted hover:bg-surface-accent transition-all font-medium"
             >
               <Settings size={20} />
               Settings & Preferences
+            </button>
+
+            {/* Logout (Mobile Only generally, but useful here too) */}
+            <button
+              onClick={() => {
+                import('../services/authService').then(mod => mod.logoutUser());
+                onClose();
+              }}
+              className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all font-medium mt-1"
+            >
+              <LogOut size={20} />
+              Sign Out
             </button>
 
             <p className="text-center text-xs text-muted/40 mt-6 font-mono">v0.5.0 Beta</p>
