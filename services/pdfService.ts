@@ -1,4 +1,5 @@
 import { logger } from '../utils/logger';
+import { cleanExtractedText } from './textCleaner';
 
 // Note: We use window.pdfjsLib from the script tag in index.html to ensure 
 // the worker version matches the library version (CDN).
@@ -165,9 +166,10 @@ function removePageArtifacts(lines: string[], pageNum: number): string[] {
 /**
  * ✨ LOGIC 3: Post-Process Polishing
  * Fixes issues created by joining PDF lines.
+ * Now enhanced with intelligent text cleaning for joined words.
  */
 function postProcessCleaner(text: string): string {
-  return text
+  let result = text
     // 1. De-hyphenation: "Amaz- \n ing" -> "Amazing"
     // Looks for: Word char + hyphen + whitespace + newline + whitespace + Word char
     .replace(/(\w+)-\s*[\r\n]+\s*(\w+)/g, '$1$2')
@@ -189,4 +191,9 @@ function postProcessCleaner(text: string): string {
     .replace(/\n{3,}/g, '\n\n')
 
     .trim();
+
+  // 6. Apply intelligent text cleaning (fixes joined words like "DUSKWASFALLINGAS")
+  result = cleanExtractedText(result);
+
+  return result;
 }

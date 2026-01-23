@@ -80,16 +80,105 @@ const Card: React.FC<CardProps> = ({ chunk, onFavorite, isActive, isBookmarked, 
     return "Chapter";
   }, [chunk]);
 
-  // Smart Title Logic
-  const displayTitle = useMemo(() => {
+  // Smart Context Label Logic - More Intelligent!
+  const displayContext = useMemo(() => {
     const label = chunk.contextLabel;
-    const isGeneric = !label || /Book Content|Text Content|Section/i.test(label);
+    const text = chunk.text || '';
+    const lowerText = text.toLowerCase();
 
-    if (!isGeneric && label.length > 2) {
-      return label;
+    // Skip generic/useless labels
+    const genericPatterns = [
+      /^Book Content$/i,
+      /^Text Content$/i,
+      /^Section$/i,
+      /^Content$/i,
+      /^Unknown$/i,
+      /^Narrative$/i,
+      /^\s*$/
+    ];
+
+    const isGeneric = !label || genericPatterns.some(p => p.test(label));
+
+    // If we have a good label from AI, clean and use it
+    if (!isGeneric && label.length > 2 && label.length < 40) {
+      const cleaned = label.replace(/^(Scene:|Topic:|Context:)\s*/i, '').trim();
+      return cleaned;
     }
 
-    return bookTitle || "FlowRead";
+    // === SMART EXTRACTION FROM TEXT ===
+
+    // 1. Speaker - Show who's talking
+    if (chunk.speaker) {
+      return chunk.speaker;
+    }
+
+    // 2. Character detection - Find who's acting
+    const characterMatch = text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:said|asked|replied|thought|looked|smiled|nodded|whispered|shouted)/);
+    if (characterMatch) {
+      return characterMatch[1];
+    }
+
+    // 3. Location/Setting
+    const locationPatterns = [
+      /(?:in|at|near|inside|outside|entered|arrived at|reached)\s+(?:the\s+)?([A-Z][a-z]+(?:\s+[A-Z]?[a-z]+)?)/,
+      /\b(?:the\s+)(church|castle|palace|forest|desert|mountain|village|city|town|market|shop|room|house|garden|oasis)/i
+    ];
+
+    for (const pattern of locationPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        const loc = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+        return `The ${loc}`;
+      }
+    }
+
+    // 4. Time of day
+    const timePatterns = [
+      { pattern: /\b(dawn|sunrise)\b/i, label: 'Dawn' },
+      { pattern: /\bmorning\b/i, label: 'Morning' },
+      { pattern: /\b(noon|midday)\b/i, label: 'Midday' },
+      { pattern: /\bafternoon\b/i, label: 'Afternoon' },
+      { pattern: /\b(dusk|sunset|evening)\b/i, label: 'Evening' },
+      { pattern: /\b(night|midnight)\b/i, label: 'Night' },
+    ];
+
+    for (const { pattern, label } of timePatterns) {
+      if (pattern.test(lowerText)) return label;
+    }
+
+    // 5. Narrative mood/scene type
+    const moodPatterns = [
+      { pattern: /\b(dream|dreamed|dreaming|slept|woke|awoke)\b/i, label: 'Dream' },
+      { pattern: /\b(remember|remembered|memory|recalled)\b/i, label: 'Memory' },
+      { pattern: /\b(journey|traveled|travelled|wandered)\b/i, label: 'Journey' },
+      { pattern: /\b(battle|fight|fought|sword|attack)\b/i, label: 'Conflict' },
+      { pattern: /\b(learn|taught|lesson|wisdom)\b/i, label: 'Lesson' },
+      { pattern: /\b(love|heart|kiss|embrace)\b/i, label: 'Romance' },
+      { pattern: /\b(fear|afraid|terror|danger)\b/i, label: 'Tension' },
+      { pattern: /\b(decision|choose|chose|decided)\b/i, label: 'Decision' },
+      { pattern: /\b(secret|hidden|reveal|discover)\b/i, label: 'Discovery' },
+      { pattern: /\b(pray|prayed|god|divine)\b/i, label: 'Spiritual' },
+    ];
+
+    for (const { pattern, label } of moodPatterns) {
+      if (pattern.test(lowerText)) return label;
+    }
+
+    // 6. Heavy dialogue
+    const quoteCount = (text.match(/["'"']/g) || []).length;
+    if (quoteCount >= 4) return 'Conversation';
+
+    // 7. New scene
+    if (chunk.isNewScene) return 'New Scene';
+
+    // 8. Extract from chapter title
+    if (chunk.chapterTitle && !/^Chapter\s*\d*$/i.test(chunk.chapterTitle)) {
+      const chapterClean = chunk.chapterTitle.replace(/^(Chapter|Part)\s*\d*[:\s]*/i, '').trim();
+      if (chapterClean.length > 2 && chapterClean.length < 25) return chapterClean;
+    }
+
+    // 9. Fallback
+    return 'Story';
   }, [chunk, bookTitle]);
 
   return (
@@ -123,26 +212,21 @@ const Card: React.FC<CardProps> = ({ chunk, onFavorite, isActive, isBookmarked, 
               {displayChapter}
             </div>
 
-            {/* Title / Context Pill */}
+            {/* Context Pill - Smart Labels */}
             <div className="
                 px-3 py-1 rounded-full
                 bg-surface border border-[var(--border-color)]
-                text-[10px] font-serif italic text-muted font-medium
+                text-[10px] font-sans text-muted font-medium
                 shadow-sm flex items-center gap-1
                 ">
-              {displayTitle}
+              {displayContext}
             </div>
           </div>
         )}
 
+
         {/* Text Content */}
         <div className="flex-grow flex flex-col justify-center w-full z-10 bg-surface/0 rounded-3xl mt-2">
-
-          {chunk.speaker && settings.showContextTags && (
-            <div className="self-start mb-4 px-3 py-1 rounded-full bg-surface border border-slate-700/20 text-[9px] font-bold uppercase text-primary/80 tracking-widest shadow-sm">
-              {chunk.speaker}
-            </div>
-          )}
 
           <div className={`${getFontFamily()} ${getTextStyles()} ${settings.isBold ? 'font-bold' : 'font-light'} text-text text-left tracking-wide ${settings.debugMode ? 'select-text' : 'select-none'} transition-all duration-300 prose prose-slate dark:prose-invert max-w-none`}>
             <ReactMarkdown
