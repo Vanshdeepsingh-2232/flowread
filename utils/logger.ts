@@ -8,7 +8,7 @@ interface LogConfig {
 
 class Logger {
     private config: LogConfig = {
-        enabled: (import.meta as any).env.DEV, // Only log in development by default
+        enabled: true, // Enabled in both Dev and Prod (filtered by logLevel)
         logLevel: 'DEBUG',
         showTimestamps: true,
     };
@@ -58,12 +58,25 @@ class Logger {
         const timestamp = this.getTimestamp();
         const sanitizedData = this.sanitize(data);
 
-        // Send to Vite Terminal Bridge safely via Fetch
-        // This ensures NO application logs leak to the individual browser console
-        fetch('/_log', {
+        // 1. Console Fallback (Visible in Dev Only)
+        if ((import.meta as any).env.DEV) {
+            const consoleMsg = `[${timestamp}] ${service}: ${message}`;
+            switch (level) {
+                case 'DEBUG': console.debug(`%c${consoleMsg}`, 'color: gray', sanitizedData || ''); break;
+                case 'INFO': console.info(`%c${consoleMsg}`, 'color: blue', sanitizedData || ''); break;
+                case 'SUCCESS': console.log(`%c${consoleMsg}`, 'color: green', sanitizedData || ''); break;
+                case 'WARN': console.warn(`%c${consoleMsg}`, 'color: orange', sanitizedData || ''); break;
+                case 'ERROR': console.error(`%c${consoleMsg}`, 'color: red', sanitizedData || ''); break;
+            }
+        }
+
+        // 2. Remote Logging (Vite Bridge in Dev, Vercel Function in Prod)
+        const logEndpoint = (import.meta as any).env.DEV ? '/_log' : '/api/log';
+
+        fetch(logEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            mode: 'cors',
+            keepalive: true, // Ensure log is sent even if page unloads
             body: JSON.stringify({
                 level,
                 service,
@@ -72,7 +85,7 @@ class Logger {
                 timestamp
             })
         }).catch(() => {
-            // Silently fail if log bridge is unavailable (e.g. production)
+            // Silently fail if log bridge/api is unavailable
         });
     }
 
