@@ -9,7 +9,7 @@ import { updateReadingStreak } from '../hooks/useReadingStats';
 interface ReaderViewProps {
   book: Book;
   onBack: () => void;
-  onLoadMore: () => Promise<void>;
+  onLoadMore: (silent?: boolean) => Promise<void>;
   settings: UserSettings;
   onOpenSettings: () => void;
 }
@@ -30,9 +30,31 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
   const [activeIndex, setActiveIndex] = useState(book.lastReadIndex || 0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+  // Prefetch tracking to avoid spamming
+  const prefetchTriggeredRef = useRef<number>(0);
+
   // Track the furthest point user has reached in this session
   const [furthestIndex, setFurthestIndex] = useState(Math.max(book.lastReadIndex || 0, book.furthestReadIndex || 0));
   const prevChunkCountRef = useRef<number>(0);
+
+  // Background Prefetch Logic
+  useEffect(() => {
+    if (!chunks || chunks.length === 0 || isLoadingMore) return;
+
+    // Check if we need to prefetch
+    const PREFETCH_THRESHOLD = 20; // Load more when 20 chunks (approx 2 mins reading) remain
+    const remainingChunks = chunks.length - activeIndex;
+    const hasMoreContent = (book.processedCharCount || 0) < (book.rawContent?.length || 0);
+
+    if (remainingChunks <= PREFETCH_THRESHOLD && hasMoreContent) {
+      // Prevent spamming prefetch for the same chunk set
+      if (prefetchTriggeredRef.current !== chunks.length) {
+        console.log('⚡ Prefetching next chapter...');
+        prefetchTriggeredRef.current = chunks.length; // Mark this length as triggered
+        onLoadMore(true).catch(e => console.error("Prefetch failed", e));
+      }
+    }
+  }, [chunks?.length, activeIndex, isLoadingMore, book.processedCharCount, book.rawContent?.length]);
 
   // Track if we have restored the initial scroll position
   const initialRestoreDone = useRef(false);
@@ -61,10 +83,8 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
   // Handle auto-scroll when new content is loaded
   useEffect(() => {
     if (chunks && chunks.length > 0) {
-      const prevCount = prevChunkCountRef.current;
-      if (prevCount > 0 && chunks.length > prevCount) {
-        setTimeout(() => scrollToIndex(prevCount, 'smooth'), 100);
-      }
+      // Logic removed: Don't auto-scroll to new content, let user swipe to it.
+      // This is critical for background prefetching so we don't yank the user away from their current card.
       prevChunkCountRef.current = chunks.length;
     }
   }, [chunks]);

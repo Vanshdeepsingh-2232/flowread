@@ -11,7 +11,7 @@ export function getChunkingSystemInstruction(genre: Genre = 'non_fiction'): stri
     Your Goal: Split the provided text into logical, substantive "chunks" or "cards".
     
     ** CRITICAL RULES:**
-    1. ** PACING **: STRICTLY 80-100 words MAX per card. NEVER exceed 120 words. Break aggressively but smartly.
+    1. ** PACING **: STRICTLY 50-80 words MAX per card. NEVER exceed 100 words. Break aggressively but smartly.
     2. ** DENSITY **: 1 paragraph per card. If a paragraph is long, split it into multiple cards.
     3. ** FLOW **: Each card should be one quick thought. Prefer shorter over "complete".
     4. ** VERBATIM **: Exact text only. DO NOT rewrite, summarize, or simplify (Except for PDF repairs below).. 

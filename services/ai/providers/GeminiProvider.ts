@@ -23,7 +23,7 @@ export class GeminiProvider implements AIProvider {
 
         try {
             const response = await this.client.models.generateContent({
-                model: 'gemini-2.0-flash-exp',
+                model: 'gemini-2.5-flash',
                 contents: `You are an expert web scraper and content extractor.
         
         Task: Extract the main article content from the following raw HTML or text.
@@ -93,6 +93,7 @@ export class GeminiProvider implements AIProvider {
             const systemInstruction = getChunkingSystemInstruction(genre);
 
             logger.time('gemini-chunking');
+            // Using gemini-1.5-flash as it is stable and fast
             const response = await this.client.models.generateContent({
                 model: 'gemini-2.5-flash',
                 contents: `CONTEXT: Book Title: "${bookTitle || 'Unknown'}".Continuing from previous batch.Last Chapter: "${previousContext || 'None'}".\n\nFormat the following text into smart reading cards: \n\n${textSegment} `,
@@ -155,13 +156,7 @@ export class GeminiProvider implements AIProvider {
             });
 
         } catch (error: any) {
-            logger.error('GeminiProvider', 'Gemini processing error, falling back', error);
-            // Ideally we would trigger the fallback logic here, but for now we re-throw 
-            // or we can implement the fallback in the Factory or Base class.
-            // For this refactor, I will move the fallback logic to the Factory level or keep it here.
-            // Given the file size, I'll return empty array for now and let the consumer handle fallback?
-            // No, let's include the fallback function in a utility file so providers can reuse it?
-            // Or just re-implement fallback here to be safe.
+            logger.error('GeminiProvider', `Gemini processing error: ${error.message}`, error);
             throw error;
         }
     }

@@ -453,50 +453,95 @@ const App: React.FC = () => {
     setCurrentBook(null);
   };
 
-  const handleLoadMore = async () => {
-    if (processingState.active) return; // Prevent concurrent calls
-    if (!currentBook || !currentBook.rawContent) return;
+  // Lock to prevent concurrent processing without relying on state re-renders
+  // Promise Lock to access the active background task
+  const activeLoadPromise = React.useRef<Promise<void> | null>(null);
 
+  const handleLoadMore = async (silent: boolean = false) => {
+    // 1. Check if ALREADY processing
+    if (activeLoadPromise.current) {
+      if (!silent) {
+        // User clicked manually while background process is running
+        // Upgrade to visible loader and wait for it
+        logger.info('App', 'Attaching to running background process...');
+        setProcessingState({ active: true, message: 'Finishing up...', progress: 90 });
+        try {
+          await activeLoadPromise.current;
+        } catch (e) {
+          // Error already handled by the runner
+        } finally {
+          setProcessingState({ active: false, message: '', progress: 0 });
+        }
+      } else {
+        logger.warn('App', 'Background load skipped: Already running');
+      }
+      return;
+    }
+
+    // 2. Validation
+    if (!currentBook || !currentBook.rawContent) return;
     const startChar = currentBook.processedCharCount;
     const totalLen = currentBook.rawContent.length;
 
-    if (startChar >= totalLen) return;
-
-    try {
-      // Load next batch
-      const nextBatchEnd = findSafeBatchEnd(currentBook.rawContent.slice(startChar), BATCH_SIZE) + startChar;
-      const textBatch = currentBook.rawContent.slice(startChar, nextBatchEnd);
-
-      // Find previous context (last chapter) and robustly get the highest index
-      // sort by index to ensure we get the absolute last one
-      const sortedChunks = await db.chunks.where('bookId').equals(currentBook.id).sortBy('index');
-      const lastChunk = sortedChunks[sortedChunks.length - 1];
-
-      const context = lastChunk?.chapterTitle;
-      const nextIndex = (lastChunk?.index ?? -1) + 1;
-
-      setProcessingState({ active: true, message: 'Synthesizing...', progress: 50 });
-
-      const newChunks = await semanticChunking(textBatch, currentBook.id, nextIndex, context, currentBook.title, currentBook.genre);
-
-      await db.transaction('rw', db.books, db.chunks, async () => {
-        await db.chunks.bulkAdd(newChunks);
-        await db.books.update(currentBook.id, {
-          totalChunks: (currentBook.totalChunks || 0) + newChunks.length,
-          processedCharCount: nextBatchEnd
-        });
-      });
-
-      // Refresh current book object
-      const updatedBook = await db.books.get(currentBook.id);
-      if (updatedBook) setCurrentBook(updatedBook);
-
-      setProcessingState({ active: false, message: '', progress: 0 });
-    } catch (e: any) {
-      setProcessingState({ active: false, message: '', progress: 0 });
-      showError("Failed to load more content. Check your connection.");
-      logger.error('App', 'Failed to load more chunks', e);
+    if (startChar >= totalLen) {
+      if (!silent) showSuccess("You have reached the end of the book!");
+      return;
     }
+
+    // 3. Define the async worker function
+    const worker = async () => {
+      try {
+        // Only show full-screen loader if not silent (background prefetch)
+        if (!silent) {
+          setProcessingState({ active: true, message: 'Synthesizing...', progress: 50 });
+        } else {
+          logger.info('App', 'Background prefetching next chapter...');
+        }
+
+        // Load next batch
+        const nextBatchEnd = findSafeBatchEnd(currentBook.rawContent!.slice(startChar), BATCH_SIZE) + startChar;
+        const textBatch = currentBook.rawContent.slice(startChar, nextBatchEnd);
+
+        // Find previous context (last chapter) and robustly get the highest index
+        const sortedChunks = await db.chunks.where('bookId').equals(currentBook.id).sortBy('index');
+        const lastChunk = sortedChunks[sortedChunks.length - 1];
+
+        const context = lastChunk?.chapterTitle;
+        const nextIndex = (lastChunk?.index ?? -1) + 1;
+
+        const newChunks = await semanticChunking(textBatch, currentBook.id, nextIndex, context, currentBook.title, currentBook.genre);
+
+        await db.transaction('rw', db.books, db.chunks, async () => {
+          await db.chunks.bulkAdd(newChunks);
+          await db.books.update(currentBook.id, {
+            totalChunks: (currentBook.totalChunks || 0) + newChunks.length,
+            processedCharCount: nextBatchEnd
+          });
+        });
+
+        // Refresh current book object
+        const updatedBook = await db.books.get(currentBook.id);
+        if (updatedBook) setCurrentBook(updatedBook);
+
+        logger.success('App', silent ? 'Background prefetch complete' : 'Content loaded successfully');
+
+      } catch (e: any) {
+        if (!silent) {
+          showError("Failed to load more content. Check your connection.");
+        }
+        logger.error('App', 'Failed to load more chunks', e);
+        throw e; // Propagate to attached listeners
+      } finally {
+        if (!silent) {
+          setProcessingState({ active: false, message: '', progress: 0 });
+        }
+        activeLoadPromise.current = null; // Release lock
+      }
+    };
+
+    // 4. Start execution
+    activeLoadPromise.current = worker();
+    await activeLoadPromise.current;
   };
 
   const handleNavigate = (page: 'features' | 'about') => {

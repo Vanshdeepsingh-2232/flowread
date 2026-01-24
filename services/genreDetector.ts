@@ -2,11 +2,18 @@ import { GoogleGenAI } from "@google/genai";
 import { logger } from "../utils/logger";
 
 const getAiClient = () => {
-    if (!process.env.API_KEY) {
-        logger.error('GenreDetector', "API Key is missing. Please set process.env.API_KEY.");
-        throw new Error("API Key is missing. Please set process.env.API_KEY.");
+    // In Vite, use import.meta.env
+    // We try specific GEMINI key first, then fall back to Firebase key (often same project)
+    const apiKey = import.meta.env.VITE_GOOGLE_API_KEY ||
+        import.meta.env.VITE_GEMINI_API_KEY ||
+        import.meta.env.VITE_FIREBASE_API_KEY ||
+        process.env.API_KEY;
+
+    if (!apiKey) {
+        logger.error('GenreDetector', "API Key is missing. Please set VITE_GOOGLE_API_KEY or VITE_FIREBASE_API_KEY.");
+        throw new Error("API Key is missing.");
     }
-    return new GoogleGenAI({ apiKey: process.env.API_KEY });
+    return new GoogleGenAI({ apiKey });
 };
 
 export type Genre = 'fiction' | 'non_fiction' | 'technical';
@@ -14,7 +21,7 @@ export type Genre = 'fiction' | 'non_fiction' | 'technical';
 export async function detectGenre(fullText: string): Promise<Genre> {
     try {
         const ai = getAiClient();
-        logger.info('GenreDetector', 'Detecting genre for new book...');
+        logger.info('GenreDetector', 'Detecting genre... (Model: gemini-1.5-flash)');
 
         // 1. Take a sample (First 1500 chars)
         const sample = fullText.substring(0, 1500);

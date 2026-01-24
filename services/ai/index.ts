@@ -9,11 +9,17 @@ import { logger } from '../../utils/logger';
 const getProvider = (): AIProvider => {
     // 1. Read provider config (e.g., from .env)
     // Options: 'gemini', 'claude', 'openai'
-    const providerType = process.env.AI_PROVIDER || 'gemini';
+    const providerType = import.meta.env.VITE_AI_PROVIDER || process.env.AI_PROVIDER || 'gemini';
 
     // 2. Instantiate based on type
     if (providerType === 'gemini') {
-        const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+        // Try precise keys first, then generic, then process.env fallback
+        const apiKey = import.meta.env.VITE_GOOGLE_API_KEY ||
+            import.meta.env.VITE_GEMINI_API_KEY ||
+            import.meta.env.VITE_FIREBASE_API_KEY ||
+            process.env.API_KEY ||
+            process.env.GEMINI_API_KEY;
+
         if (!apiKey) throw new Error("Missing API config for Gemini");
         return new GeminiProvider(apiKey);
     }

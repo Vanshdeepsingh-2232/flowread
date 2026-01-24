@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Home, User, Server, Settings, X, BookOpen, BarChart2, LogOut } from 'lucide-react';
 import { AppState } from '../types';
+import { logoutUser } from '../services/authService';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -117,7 +118,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             {/* Logout (Mobile Only generally, but useful here too) */}
             <button
               onClick={() => {
-                import('../services/authService').then(mod => mod.logoutUser());
+                logoutUser();
                 onClose();
               }}
               className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all font-medium mt-1"
@@ -130,7 +131,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
         </div>
-      </div>
+      </div >
     </>
   );
 };
