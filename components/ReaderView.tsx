@@ -282,8 +282,13 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
       c.tags?.includes('story-start') ||
       /Chapter\s+(1|I|One)|Prologue|Part\s+(1|I|One)|^1\.?\s/i.test(c.chapterTitle || "")
     );
-    console.log('📖 Story Start Debug:', { index, titles: chunks.slice(0, 10).map(c => c.chapterTitle) });
     return index;
+  }, [chunks]);
+
+  const hasMultipleChapters = useMemo(() => {
+    if (!chunks || chunks.length === 0) return false;
+    const firstTitle = chunks[0].chapterTitle;
+    return chunks.some(c => c.chapterTitle !== firstTitle);
   }, [chunks]);
 
   const handleSkipToStory = () => {
@@ -330,7 +335,8 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
   const showSkipIntro = storyStartIndex > 0 && activeIndex < storyStartIndex;
   const showResume = activeIndex < furthestIndex - 2;
   const isAtEnd = chunks && activeIndex >= chunks.length - 1;
-  const showNextChapter = !isAtEnd || hasMoreContent;
+  // Only show Next Chapter if there is more content to load, OR if we have multiple chapters to navigate between.
+  const showNextChapter = (!isAtEnd || hasMoreContent) && (hasMoreContent || hasMultipleChapters);
 
   const getCapsuleStyles = () => {
     switch (settings.theme) {

@@ -59,6 +59,8 @@ class Logger {
         const sanitizedData = this.sanitize(data);
 
         // 1. Console Fallback (Visible in Dev Only)
+        // User requested no browser console logs
+        /*
         if ((import.meta as any).env.DEV) {
             const consoleMsg = `[${timestamp}] ${service}: ${message}`;
             switch (level) {
@@ -69,6 +71,7 @@ class Logger {
                 case 'ERROR': console.error(`%c${consoleMsg}`, 'color: red', sanitizedData || ''); break;
             }
         }
+        */
 
         // 2. Remote Logging (Vite Bridge in Dev, Vercel Function in Prod)
         const logEndpoint = (import.meta as any).env.DEV ? '/_log' : '/api/log';
