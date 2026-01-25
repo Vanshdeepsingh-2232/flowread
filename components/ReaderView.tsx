@@ -278,10 +278,12 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
   // --- Navigation Logic ---
   const storyStartIndex = useMemo(() => {
     if (!chunks) return -1;
-    return chunks.findIndex(c =>
+    const index = chunks.findIndex(c =>
       c.tags?.includes('story-start') ||
-      /Chapter 1|One|Part 1|Prologue/i.test(c.chapterTitle || "")
+      /Chapter\s+(1|I|One)|Prologue|Part\s+(1|I|One)|^1\.?\s/i.test(c.chapterTitle || "")
     );
+    console.log('📖 Story Start Debug:', { index, titles: chunks.slice(0, 10).map(c => c.chapterTitle) });
+    return index;
   }, [chunks]);
 
   const handleSkipToStory = () => {

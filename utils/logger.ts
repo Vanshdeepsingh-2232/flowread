@@ -38,7 +38,7 @@ class Logger {
         if (!data || typeof data !== 'object') return data;
         if (data instanceof Error) return { message: data.message, code: (data as any).code };
 
-        const sensitiveKeys = ['uid', 'email', 'password', 'photoURL', 'displayName'];
+        const sensitiveKeys = ['uid', 'email', 'password', 'photoURL', 'displayName', 'apiKey', 'key', 'token', 'authorization', 'secret'];
         const sanitized = Array.isArray(data) ? [...data] : { ...data };
 
         Object.keys(sanitized).forEach(key => {
