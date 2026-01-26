@@ -569,7 +569,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
             <div
               key={chunk.id}
               id={`chunk-card-${idx}`}
-              className={`${isHorizontal ? 'h-full w-screen shrink-0 flex items-center justify-center snap-center' : 'w-full'}`}
+              className={`${isHorizontal ? 'h-full w-screen shrink-0 flex items-center justify-center snap-center snap-always' : 'w-full snap-center snap-always'}`}
             >
               <Card
                 chunk={chunk}
@@ -583,7 +583,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
           ))}
 
           {/* End Spacer & Loader */}
-          <div className={`${isHorizontal ? 'w-screen h-full shrink-0 flex items-center justify-center snap-center' : 'h-[100dvh] w-full shrink-0 flex items-center justify-center snap-center'}`}>
+          <div className={`${isHorizontal ? 'w-screen h-full shrink-0 flex items-center justify-center snap-center snap-always' : 'h-[100dvh] w-full shrink-0 flex items-center justify-center snap-center snap-always'}`}>
             <div
               ref={loaderRef}
               className={`flex flex-col items-center gap-4 text-muted/50 p-6 rounded-2xl ${!hasMoreContent ? 'opacity-100' : ''}`}

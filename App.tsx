@@ -647,7 +647,7 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <div className={`min-h-[100dvh] text-text antialiased bg-background transition-colors duration-300 font-${settings.fontFamily}`}>
+      <div className={`min-h-dvh text-text antialiased bg-background transition-colors duration-300 font-${settings.fontFamily}`}>
 
         {/* Sidebar */}
         <Sidebar
