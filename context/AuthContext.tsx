@@ -61,8 +61,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (!mounted) return;
 
             clearTimeout(timeoutId);
-            setConnectionStatus('connected');
-            logger.success('AuthContext', 'Firebase connected successfully');
+            setConnectionStatus(navigator.onLine ? 'connected' : 'offline');
+            logger.success('AuthContext', 'Auth state changed', { status: navigator.onLine ? 'online' : 'offline' });
             setCurrentUser(user);
 
             if (user) {
@@ -74,24 +74,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     if (docSnap.exists()) {
                         setUserProfile(docSnap.data() as UserProfile);
                         logger.success('AuthContext', 'User profile loaded', { displayName: docSnap.data().displayName });
-                    } else {
-                        logger.warn('AuthContext', 'User profile not found in Firestore', { uid: user.uid });
                     }
                 } catch (err) {
                     logger.error('AuthContext', 'Error fetching profile from Firestore', err);
                 }
             } else {
                 setUserProfile(null);
-                logger.info('AuthContext', 'No user logged in, cleared userProfile');
             }
 
             setLoading(false);
         });
 
+        // Connectivity Listeners for immediate UI update
+        const handleOnline = () => setConnectionStatus('connected');
+        const handleOffline = () => setConnectionStatus('offline');
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
         return () => {
             mounted = false;
             clearTimeout(timeoutId);
             unsubscribe();
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
         };
     }, []);
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Moon, Sun, Coffee, Edit2, User as UserIcon, Check, X } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, Coffee, Edit2, User as UserIcon, Check, X, BookOpen } from 'lucide-react';
 import { Theme } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { doc, setDoc } from 'firebase/firestore';
@@ -198,6 +198,14 @@ const Profile: React.FC<ProfileProps> = ({ onBack, currentTheme, onThemeChange }
               >
                 <Coffee size={24} />
                 <span className="text-sm font-medium">Coffee</span>
+              </button>
+
+              <button
+                onClick={() => onThemeChange('textured')}
+                className={`flex-1 p-4 rounded-xl border flex flex-col items-center gap-2 transition ${currentTheme === 'textured' ? 'border-primary bg-primary/10 text-primary' : 'border-slate-700/20 hover:bg-slate-700/10'}`}
+              >
+                <BookOpen size={24} />
+                <span className="text-sm font-medium">Textured</span>
               </button>
             </div>
           </div>

@@ -97,12 +97,14 @@ export function getChunkingSystemInstruction(genre: Genre = 'non_fiction'): stri
     script: `
       ** STRICT RULES FOR SCRIPTS/SCREENPLAYS:**
       - ** PRESERVE FORMATTING:** Maintain the visual structure of a screenplay. Use monospace-style spacing.
-      - ** CHARACTER NAMES VS SCENE HEADINGS (ADVANCED IDENTIFICATION):**
-        - ** IDENTIFICATION RULE:** A "Character Name" is a PERSON who is about to SPEAK. It is almost always followed immediately by dialogue on the next line.
-        - ** CHARACTER NAMES (WRAP IN **):** Wrap only the names of speakers (e.g., "**MIKE**", "**WILL**", "**JOYCE (V.O.)**").
-        - ** SCENE HEADINGS (LEAVE PLAIN):** These are locations, times, or camera directions. NEVER wrap them in asterisks.
-          * Examples to LEAVE PLAIN: "INT. HOUSE - NIGHT", "EXT. WOODS", "BYERS HOUSE", "LABORATORY", "BASEMENT", "CUT TO:".
-        - ** KEY DIFFERENCE:** Character names are followed by dialogue. Scene headings are followed by ACTION descriptions or other headings.
+      - ** CHARACTER NAMES VS SCENE HEADINGS (PRECISION IDENTIFICATION):**
+        - ** CHARACTER NAMES (WRAP IN **):** These are PEOPLE (e.g., "**MIKE**", "**WILL**", "**NANCY**"). 
+          * RULE: Only bold a name if it's a person followed immediately by dialogue.
+          * PREFERENCE: Prioritize known human-like names.
+        - ** SCENE HEADINGS (LEAVE PLAIN):** Locations, times, or camera directions. NEVER wrap them in asterisks.
+          * Examples to LEAVE PLAIN: "INT. HOUSE - NIGHT", "EXT. WOODS", "MIKE'S HOUSE", "WHEELER'S KITCHEN", "BYERS HOUSE", "LABORATORY", "BASEMENT".
+          * POSSESSIVE RULE: Never bold words followed by "'S" + a location word (e.g., "MIKE'S HOUSE" is a PLACE, not a character).
+        - ** KEY DIFFERENCE:** Character names are PEOPLE about to speak. Scene headings are PLACES where things happen.
       - ** SCENE PACING:** Keep 5-6 dialogue turns in a single card to maintain scene flow. Multiple characters MUST appear on the same card when they are part of the same conversational beat.
       - ** DIALOGUE:** Never split a character's name from their immediate dialogue lines.
       - ** WHITESPACE:** Use double line breaks between character blocks for clarity.

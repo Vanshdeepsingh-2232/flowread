@@ -21,6 +21,8 @@ import { detectGenre } from './services/genreDetector';
 import WebReaderInput from './components/WebReaderInput';
 import { fetchAndParseArticle } from './services/webExtractor';
 import { cleanWebHtml } from './services/geminiService';
+import OfflineView from './components/OfflineView';
+import ConfirmDialog from './components/ConfirmDialog';
 
 // Lazy Imports (Load only when needed)
 const ReaderView = React.lazy(() => import('./components/ReaderView'));
@@ -58,6 +60,8 @@ const DEFAULT_SETTINGS: UserSettings = {
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.LIBRARY);
   const [currentBook, setCurrentBook] = useState<Book | null>(null);
+  const [showOfflinePage, setShowOfflinePage] = useState(false);
+  const [showClearCacheDialog, setShowClearCacheDialog] = useState(false);
 
   // Auth & Sync Logic
   const { currentUser: user } = useAuth();
@@ -134,7 +138,7 @@ const App: React.FC = () => {
 
     // Apply Theme Class
     const root = document.documentElement;
-    root.classList.remove('midnight', 'slate', 'paper', 'daylight', 'light', 'dark', 'coffee'); // Removing old ones too
+    root.classList.remove('midnight', 'slate', 'paper', 'daylight', 'light', 'dark', 'coffee', 'textured'); // Removing old ones too
     root.classList.add(settings.theme);
 
     // Apply Global Font Var if needed, or handle in ReaderView
@@ -153,21 +157,28 @@ const App: React.FC = () => {
   });
 
   const handleClearCache = async () => {
-    if (confirm("Clear all book content? Highlights and Library metadata will differ.")) {
-      // Implementation: We clear chunks and rawText but keep Book entries and BrainBank
-      // Actually user said "Keeps highlights, deletes processed book text".
-      // This implies we need to re-process if they open it again.
-      // For simplicity, let's just clear everything except BrainBank for now? 
-      // Or strictly following request:
+    setShowClearCacheDialog(true);
+  };
 
+  const confirmClearCache = async () => {
+    try {
       // 1. Clear Chunks
       await db.chunks.clear();
 
-      // 2. Clear Raw Content from Books
-      await db.books.toCollection().modify({ rawContent: "", processedCharCount: 0, totalChunks: 0 });
+      // 2. Clear all Books (Full reset as requested)
+      await db.books.clear();
 
-      showSuccess("Cache cleared. Book text removed, highlights kept.");
-      window.location.reload();
+      setShowClearCacheDialog(false);
+      showSuccess("Cache cleared. All books removed.");
+
+      // If user was reading, go back to library
+      if (appState === AppState.READING) {
+        setAppState(AppState.LIBRARY);
+        setCurrentBook(null);
+      }
+    } catch (e) {
+      logger.error('App', 'Failed to clear cache', e);
+      showError("Failed to clear cache.");
     }
   };
 
@@ -314,7 +325,11 @@ const App: React.FC = () => {
 
     } catch (error: any) {
       logger.error('App', 'File processing failed', error);
-      showError(error.message || "Failed to process file.");
+      if (error.message === "NETWORK_DISCONNECTED") {
+        setShowOfflinePage(true);
+      } else {
+        showError(error.message || "Failed to process file.");
+      }
       setProcessingState({ active: false, message: '', progress: 0 });
     }
   };
@@ -398,7 +413,11 @@ const App: React.FC = () => {
 
     } catch (error: any) {
       logger.error('App', 'Article extraction failed', error);
-      showError(error.message || "Failed to fetch article.");
+      if (error.message === "NETWORK_DISCONNECTED") {
+        setShowOfflinePage(true);
+      } else {
+        showError(error.message || "Failed to fetch article.");
+      }
       setProcessingState({ active: false, message: '', progress: 0 });
     }
   };
@@ -557,6 +576,18 @@ const App: React.FC = () => {
 
   // Render Content based on State
   const renderContent = () => {
+    if (showOfflinePage) {
+      return (
+        <OfflineView
+          onRetry={() => {
+            if (navigator.onLine) setShowOfflinePage(false);
+            else showError("Still offline. Please check your data or Wi-Fi.");
+          }}
+          onGoHome={() => setShowOfflinePage(false)}
+        />
+      );
+    }
+
     if (processingState.active) {
       // While processing, show a loading/progress screen
       return (
@@ -688,6 +719,20 @@ const App: React.FC = () => {
             onClose={() => setErrorState(null)}
           />
         )}
+
+        {/* Clear Cache Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={showClearCacheDialog}
+          title="Clear Library Cache?"
+          message="This will delete all processed books and chunks from your device. Highlights in your BrainBank are kept."
+          confirmLabel="Clear Everything"
+          isDestructive={true}
+          onConfirm={confirmClearCache}
+          onCancel={() => setShowClearCacheDialog(false)}
+        />
+
+        {/* Dynamic Paper Texture Overlay */}
+        <div className="paper-overlay" />
       </div>
     </ErrorBoundary>
   );

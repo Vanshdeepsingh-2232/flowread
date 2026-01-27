@@ -55,8 +55,20 @@ export async function detectGenre(fullText: string): Promise<Genre> {
         }
         return 'non_fiction'; // Default fallback
 
-    } catch (error) {
+    } catch (error: any) {
+        // Specifically detect network/fetch errors
+        const isNetworkError =
+            error.message?.includes('fetch') ||
+            error.message?.includes('NetworkError') ||
+            error.message?.includes('not connected') ||
+            !navigator.onLine;
+
+        if (isNetworkError) {
+            logger.error('GenreDetector', "Genre detection failed due to network issue", error);
+            throw new Error("NETWORK_DISCONNECTED");
+        }
+
         logger.error('GenreDetector', "Genre detection failed, falling back to non_fiction", error);
-        return 'non_fiction'; // Fail safe
+        return 'non_fiction'; // Fail safe for AI glitches, but not for network
     }
 }

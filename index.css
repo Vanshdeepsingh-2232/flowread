@@ -47,15 +47,20 @@
 
 /* Slate Theme */
 .slate {
-  --background: #0f172a;
-  --surface: #1e293b;
-  --text: #f8fafc;
-  --muted: #94a3b8;
-  --border-color: #334155;
-  --primary: #38bdf8;
-  --surface-accent: #334155;
-  --shadow-color: #000000;
-  /* Slate-700 */
+  --background: #1a1c1e;
+  /* Deep Steel Gray */
+  --surface: #2d3135;
+  /* Industrial Slate */
+  --text: #f1f1f1;
+  /* Silver Mist */
+  --muted: #a3bac3;
+  /* Cool Pewter */
+  --border-color: #3e444a;
+  /* Iron Bolt */
+  --primary: #78a1bb;
+  /* Metallic Blue */
+  --surface-accent: #3e444a;
+  --shadow-color: #0d0e0f;
 }
 
 /* Paper Theme */
@@ -86,15 +91,58 @@
 
 /* Coffee Theme */
 .coffee {
-  --background: #231e18;
-  --surface: #362e26;
-  --text: #dbc8b6;
-  --muted: #9a8a7c;
-  --border-color: #4e4236;
-  --primary: #dcb188;
-  --surface-accent: #4e4236;
-  --shadow-color: #000000;
-  /* Darker Coffee */
+  --background: #1a1612;
+  /* Rich Espresso Base */
+  --surface: #28211a;
+  /* Dark Mocha Surface */
+  --text: #e5d9cc;
+  /* Warm Latte Froth/Cream */
+  --muted: #8e7d6f;
+  /* Soft Cocoa Dust */
+  --border-color: #3d3229;
+  /* Roasted Bean Border */
+  --primary: #d4a373;
+  /* Smooth Caramel Accent */
+  --surface-accent: #3d3229;
+  --shadow-color: #080706;
+}
+
+/* Textured Paper Theme */
+.textured {
+  --background: #f4f1ea;
+  /* Warm Paper Base */
+  --surface: #f9f6f0;
+  /* Slightly Lighter Page */
+  --text: #2d1e17;
+  /* Deep Sepia */
+  --muted: #8d7b6d;
+  /* Dusty Tan */
+  --border-color: #d4c5b9;
+  /* Paper Edge */
+  --primary: #a67c52;
+  /* Artisan Accent */
+  --surface-accent: #eaddcf;
+  --shadow-color: #3e2723;
+}
+
+/* Premium Image-Based Paper Texture Overlay */
+.paper-overlay {
+  display: none;
+  /* Hidden by default */
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background-image: url('/paper-texture.jpg');
+  background-repeat: repeat;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  opacity: 0.35;
+  /* Balanced intensity */
+}
+
+/* Only show overlay when textured theme is active */
+.textured .paper-overlay {
+  display: block;
 }
 
 body {

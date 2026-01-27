@@ -24,10 +24,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
     const themes: { id: Theme; label: string; color: string }[] = [
         { id: 'midnight', label: 'Midnight', color: 'bg-[#020617]' },
-        { id: 'slate', label: 'Slate', color: 'bg-[#0f172a]' },
+        { id: 'slate', label: 'Slate', color: 'bg-[#1a1c1e]' },
         { id: 'paper', label: 'Paper', color: 'bg-[#fdfbf7]' },
         { id: 'daylight', label: 'Daylight', color: 'bg-[#ffffff]' },
-        { id: 'coffee', label: 'Coffee', color: 'bg-[#231e18]' },
+        { id: 'coffee', label: 'Coffee', color: 'bg-[#1a1612]' },
+        { id: 'textured', label: 'Textured', color: 'bg-[#f4e4d4]' },
     ];
 
     const fonts: { id: FontFamily; label: string }[] = [

@@ -62,7 +62,7 @@ export enum AppState {
 
 // --- User Settings & Preferences ---
 
-export type Theme = 'midnight' | 'slate' | 'paper' | 'daylight' | 'coffee';
+export type Theme = 'midnight' | 'slate' | 'paper' | 'daylight' | 'coffee' | 'textured';
 export type FontFamily = 'serif' | 'sans' | 'dyslexic' | 'quicksand';
 export type ScrollMode = 'vertical' | 'horizontal';
 export type DensityMode = 'focus' | 'standard' | 'dense';

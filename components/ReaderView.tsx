@@ -349,6 +349,9 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
       case 'midnight':
         // Midnight: Deep blue/black
         return 'bg-slate-900/90 border border-white/5 text-slate-100 shadow-2xl shadow-sky-500/20';
+      case 'textured':
+        // Textured: Premium paper, dark brown border, subtle shadow
+        return 'bg-[#efe6d5]/95 border border-[#3e2723]/10 text-[#2d1e17] shadow-xl shadow-[#3e2723]/10';
       case 'slate':
       default:
         // Slate: Dark gray
@@ -361,6 +364,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
       case 'daylight': return 'bg-slate-200';
       case 'paper': return 'bg-[#dcc8a9]';
       case 'midnight': return 'bg-slate-800';
+      case 'textured': return 'bg-[#d8c7b8]';
       case 'slate': default: return 'bg-slate-700/50';
     }
   };
@@ -370,6 +374,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
       case 'daylight': return 'bg-slate-200 ring-1 ring-blue-500/30';
       case 'paper': return 'bg-[#dcc8a9] ring-1 ring-[#8b5e34]/30';
       case 'midnight': return 'bg-sky-900/50 ring-1 ring-sky-500/50';
+      case 'textured': return 'bg-[#c8b7a8] ring-1 ring-[#3e2723]/10';
       case 'slate': default: return 'bg-slate-600 ring-1 ring-white/20';
     }
   };
@@ -380,6 +385,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
       case 'daylight': return 'bg-white text-slate-900 border-slate-200 shadow-slate-200/50';
       case 'paper': return 'bg-[#efe6d5] text-[#5c3d22] border-[#8b5e34]/20 shadow-[#8b5e34]/10';
       case 'midnight': return 'bg-slate-900 text-white border-slate-700/50 shadow-sky-500/20';
+      case 'textured': return 'bg-[#f4e4d4] text-[#2d1e17] border-[#d4c5b9] shadow-md';
       case 'slate': default: return 'bg-slate-800 text-white border-slate-600 shadow-black/20';
     }
   };
@@ -536,7 +542,8 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
               <div className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 border-b border-r rotate-45 ${settings.theme === 'daylight' ? 'bg-white border-slate-200' :
                 settings.theme === 'paper' ? 'bg-[#efe6d5] border-[#8b5e34]/20' :
                   settings.theme === 'midnight' ? 'bg-slate-900 border-slate-700/50' :
-                    'bg-slate-800 border-slate-600'
+                    settings.theme === 'textured' ? 'bg-[#f4e4d4] border-[#d4c5b9]' :
+                      'bg-slate-800 border-slate-600'
                 }`} />
             </div>
           )}
