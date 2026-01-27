@@ -16,7 +16,7 @@ const getAiClient = () => {
     return new GoogleGenAI({ apiKey });
 };
 
-export type Genre = 'fiction' | 'non_fiction' | 'technical';
+export type Genre = 'fiction' | 'non_fiction' | 'technical' | 'script';
 
 export async function detectGenre(fullText: string): Promise<Genre> {
     try {
@@ -32,6 +32,7 @@ export async function detectGenre(fullText: string): Promise<Genre> {
       - "fiction" (Novels, stories, dialogue-heavy)
       - "non_fiction" (Self-help, history, biography, essays, general articles)
       - "technical" (Textbooks, manuals, code documentation, scientific papers)
+      - "script" (Screenplays, stage plays, movie scripts - Look for "INT./EXT.", capitalized character names centered above dialogue)
 
       Text Sample:
       "${sample}..."
@@ -49,7 +50,7 @@ export async function detectGenre(fullText: string): Promise<Genre> {
         const text = result.text?.trim().toLowerCase() || 'non_fiction';
 
         // 3. Validation (Sanity check)
-        if (text === 'fiction' || text === 'non_fiction' || text === 'technical') {
+        if (text === 'fiction' || text === 'non_fiction' || text === 'technical' || text === 'script') {
             return text as Genre;
         }
         return 'non_fiction'; // Default fallback

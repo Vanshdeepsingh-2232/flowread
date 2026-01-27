@@ -92,6 +92,20 @@ export function getChunkingSystemInstruction(genre: Genre = 'non_fiction'): stri
       - ** Completeness:** Keep code snippets, their explanation, and the result/output together in one card.
       - ** Steps:** Keep entire procedures (Step 1 to Step 5) in a single card if possible.
       - ** Definitions:** Never separate a term from its definition and usage.
+    `,
+
+    script: `
+      ** STRICT RULES FOR SCRIPTS/SCREENPLAYS:**
+      - ** PRESERVE FORMATTING:** Maintain the visual structure of a screenplay. Use monospace-style spacing.
+      - ** CHARACTER NAMES VS SCENE HEADINGS (ADVANCED IDENTIFICATION):**
+        - ** IDENTIFICATION RULE:** A "Character Name" is a PERSON who is about to SPEAK. It is almost always followed immediately by dialogue on the next line.
+        - ** CHARACTER NAMES (WRAP IN **):** Wrap only the names of speakers (e.g., "**MIKE**", "**WILL**", "**JOYCE (V.O.)**").
+        - ** SCENE HEADINGS (LEAVE PLAIN):** These are locations, times, or camera directions. NEVER wrap them in asterisks.
+          * Examples to LEAVE PLAIN: "INT. HOUSE - NIGHT", "EXT. WOODS", "BYERS HOUSE", "LABORATORY", "BASEMENT", "CUT TO:".
+        - ** KEY DIFFERENCE:** Character names are followed by dialogue. Scene headings are followed by ACTION descriptions or other headings.
+      - ** SCENE PACING:** Keep 5-6 dialogue turns in a single card to maintain scene flow. Multiple characters MUST appear on the same card when they are part of the same conversational beat.
+      - ** DIALOGUE:** Never split a character's name from their immediate dialogue lines.
+      - ** WHITESPACE:** Use double line breaks between character blocks for clarity.
     `
   };
 

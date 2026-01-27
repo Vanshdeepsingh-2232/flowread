@@ -9,7 +9,7 @@ export interface Book {
   rawContent?: string; // Stored temporarily for processing
   processedCharCount: number; // Tracks how many characters have been chunked
   furthestReadIndex?: number; // Tracks the absolute furthest point user has reached
-  genre?: 'fiction' | 'non_fiction' | 'technical';
+  genre?: 'fiction' | 'non_fiction' | 'technical' | 'script';
 }
 
 export interface Chunk {
@@ -36,6 +36,7 @@ export interface Chunk {
   // Legacy/Internal
   tags?: string[];
   isThinking?: boolean;
+  genre?: 'fiction' | 'non_fiction' | 'technical' | 'script';
 }
 
 export interface BrainBankItem {

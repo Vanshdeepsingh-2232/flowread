@@ -59,15 +59,6 @@ const Card: React.FC<CardProps> = ({ chunk, onFavorite, isActive, isBookmarked, 
     }
   };
 
-  // Dynamic Font Family
-  const getFontFamily = () => {
-    switch (settings.fontFamily) {
-      case 'serif': return 'font-serif';
-      case 'dyslexic': return 'font-mono tracking-widest'; // Temporary fallback
-      case 'sans': default: return 'font-sans';
-    }
-  };
-
   // Robust Chapter Title Logic
   const displayChapter = useMemo(() => {
     if (chunk.chapterTitle) return chunk.chapterTitle;
@@ -181,6 +172,21 @@ const Card: React.FC<CardProps> = ({ chunk, onFavorite, isActive, isBookmarked, 
     return 'Story';
   }, [chunk, bookTitle]);
 
+
+  // Dynamic Font Family
+  const getFontFamily = () => {
+    // If it's a script, force specialized script look, overriding user setting if needed, or allowing courier.
+    if (chunk.genre === 'script') return 'font-mono whitespace-pre-wrap text-[0.9em]';
+
+    switch (settings.fontFamily) {
+      case 'serif': return 'font-serif';
+      case 'dyslexic': return 'font-mono tracking-widest'; // Temporary fallback
+      case 'sans': default: return 'font-sans';
+    }
+  };
+
+  const isScript = chunk.genre === 'script';
+
   return (
     <div
       className={`
@@ -224,26 +230,71 @@ const Card: React.FC<CardProps> = ({ chunk, onFavorite, isActive, isBookmarked, 
           </div>
         )}
 
-
         {/* Text Content */}
         <div className="flex-grow flex flex-col justify-center w-full z-10 bg-surface/0 rounded-3xl mt-2">
 
-          <div className={`${getFontFamily()} ${getTextStyles()} ${settings.isBold ? 'font-bold' : 'font-light'} text-text text-left tracking-wide ${settings.debugMode ? 'select-text' : 'select-none'} transition-all duration-300 prose prose-slate dark:prose-invert max-w-none`}>
-            <ReactMarkdown
-              components={{
-                p: ({ node, ...props }) => <p className="mb-4 last:mb-0" {...props} />,
-                strong: ({ node, ...props }) => <span className="font-bold text-primary opacity-90" {...props} />,
-                em: ({ node, ...props }) => <span className="italic opacity-80" {...props} />,
-                h1: ({ node, ...props }) => <h3 className="text-xl font-bold mb-2 mt-4" {...props} />,
-                h2: ({ node, ...props }) => <h4 className="text-lg font-bold mb-2 mt-3" {...props} />,
-                h3: ({ node, ...props }) => <h5 className="text-base font-bold mb-1 mt-2" {...props} />,
-                li: ({ node, ...props }) => <li className="ml-4 list-disc" {...props} />,
-                blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-primary/50 pl-4 italic my-4 opacity-80" {...props} />,
-                code: ({ node, ...props }) => <code className="bg-slate-800/20 rounded px-1 py-0.5 text-[0.8em] font-mono" {...props} />
-              }}
-            >
-              {chunk.text}
-            </ReactMarkdown>
+          <div className={`${getFontFamily()} ${getTextStyles()} ${settings.isBold ? 'font-bold' : 'font-light'} text-text text-left tracking-wide ${settings.debugMode ? 'select-text' : 'select-none'} transition-all duration-300 prose prose-slate dark:prose-invert max-w-none ${isScript ? 'prose-script' : ''}`}>
+            {(() => {
+              const isScriptContent = isScript || /^[A-Z]{2,}(\s+[A-Z]{2,})*(?:\s+\([A-Z.']+\))?(\s|$)/.test(chunk.text) || /\n[A-Z]{2,}(\s+[A-Z]{2,})*(?:\s+\([A-Z.']+\))?(\s|$)/.test(chunk.text) || chunk.text.includes('**');
+
+              if (isScriptContent) {
+                // 1. Normalize Names: Strip existing ** then re-apply consistently.
+                // This handles both raw input like "MIKE ..." and AI input like "**MIKE** ..."
+                let formattedText = chunk.text
+                  .replace(/\*\*([A-Z]{2,}(?:\s+[A-Z]{2,})*(?:\s+\([A-Z.']+\))?)\*\*/g, '$1') // Clean existing
+                  .replace(/(^|[\n.!?"]\s+)(?!(?:INT|EXT|EST|DAY|NIGHT|HOUSE|ROOM|LIVING|KITCHEN|BEDROOM)\b)([A-Z]{2,}(?:\s+[A-Z]{2,})*(?:\s+\([A-Z.']+\))?)(?=[:\s]|$)/g, '$1\n**$2**'); // Re-apply safely
+
+                return (
+                  <ReactMarkdown
+                    components={{
+                      p: ({ node, ...props }) => <p className="mb-0.5 last:mb-0 whitespace-pre-wrap" {...props} />,
+                      strong: ({ node, ...props }) => {
+                        const content = String(props.children || '').trim();
+
+                        // Refined Name Detection: Must be all caps, but NOT common scene words or contains structural dashes
+                        const sceneKeywords = /\b(INT|EXT|EST|DAY|NIGHT|HOUSE|ROOM|LIVING|KITCHEN|BEDROOM|EXTERIOR|INTERIOR|FLOOR|HALLWAY|STREET|ROAD|AVE|AVENUE|PARK|OFFICE|HOSPITAL|SCHOOL|CAR|TRUCK|VAN|FOREST|WOODS)\b/i;
+                        const isName = /^[A-Z]{2,}(\s+[A-Z]{2,})*(?:\s+\([A-Z.']+\))?[.:\-]*$/.test(content) &&
+                          !sceneKeywords.test(content) &&
+                          !content.includes(' - ') &&
+                          content.length < 30; // Real names are rarely huge
+
+                        return isName ? (
+                          <span className="
+                            block mt-0 mb-0.5
+                            text-primary font-black uppercase tracking-[0.1em] text-[0.85em]
+                            border-l-4 border-primary pl-4 py-1
+                            bg-primary/5 rounded-r-md w-fit pr-8
+                          " {...props} />
+                        ) : (
+                          <span className="font-bold text-primary" {...props} />
+                        );
+                      },
+                      em: ({ node, ...props }) => <span className="italic opacity-80" {...props} />,
+                    }}
+                  >
+                    {formattedText}
+                  </ReactMarkdown>
+                );
+              }
+
+              return (
+                <ReactMarkdown
+                  components={{
+                    p: ({ node, ...props }) => <p className="mb-4 last:mb-0" {...props} />,
+                    strong: ({ node, ...props }) => <span className="font-bold text-primary" {...props} />,
+                    em: ({ node, ...props }) => <span className="italic opacity-80" {...props} />,
+                    h1: ({ node, ...props }) => <h3 className="text-xl font-bold mb-2 mt-4" {...props} />,
+                    h2: ({ node, ...props }) => <h4 className="text-lg font-bold mb-2 mt-3" {...props} />,
+                    h3: ({ node, ...props }) => <h5 className="text-base font-bold mb-1 mt-2" {...props} />,
+                    li: ({ node, ...props }) => <li className="ml-4 list-disc" {...props} />,
+                    blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-primary/50 pl-4 italic my-4 opacity-80" {...props} />,
+                    code: ({ node, ...props }) => <code className="bg-slate-800/20 rounded px-1 py-0.5 text-[0.8em] font-mono" {...props} />
+                  }}
+                >
+                  {chunk.text}
+                </ReactMarkdown>
+              );
+            })()}
           </div>
         </div>
 

@@ -434,7 +434,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
             <span>{timeRemaining} min left</span>
           </div>
 
-          <div className="flex flex-col gap-2 fixed bottom-24 right-4 items-end z-[70] sm:static sm:z-auto pointer-events-auto">
+          <div className="flex flex-col gap-2 items-end pointer-events-auto">
             {showResume && (
               <button
                 onClick={handleResume}
@@ -572,7 +572,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
               className={`${isHorizontal ? 'h-full w-screen shrink-0 flex items-center justify-center snap-center snap-always' : 'w-full snap-center snap-always'}`}
             >
               <Card
-                chunk={chunk}
+                chunk={{ ...chunk, genre: book.genre }}
                 isActive={idx === activeIndex}
                 isBookmarked={bookmarkedChunkIds.has(chunk.id)}
                 onFavorite={handleFavorite}
