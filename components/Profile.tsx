@@ -120,7 +120,7 @@ const Profile: React.FC<ProfileProps> = ({ onBack, currentTheme, onThemeChange }
                   type="text"
                   value={editedName}
                   onChange={(e) => setEditedName(e.target.value)}
-                  className="w-full bg-background border border-[var(--border-color)] rounded-lg p-2 text-text focus:border-primary outline-none"
+                  className="w-full bg-background border border-(--bordesr-color) rounded-lg p-2 text-text focus:border-primary outline-none"
                   placeholder="Display Name"
                   disabled={saving}
                 />
@@ -136,7 +136,7 @@ const Profile: React.FC<ProfileProps> = ({ onBack, currentTheme, onThemeChange }
                   <button
                     onClick={handleCancelEdit}
                     disabled={saving}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-surface border border-[var(--border-color)] rounded-lg text-sm font-medium hover:bg-background disabled:opacity-50 transition"
+                    className="flex items-center gap-1 px-3 py-1.5 bg-surface border border-(--border-color) rounded-lg text-sm font-medium hover:bg-background disabled:opacity-50 transition"
                   >
                     <X size={16} />
                     Cancel

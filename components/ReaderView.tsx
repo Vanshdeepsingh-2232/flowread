@@ -410,7 +410,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
 
   return (
     <div className={`
-       relative h-[100dvh] bg-background flex flex-col transition-colors duration-500 
+       relative h-dvh bg-background flex flex-col transition-colors duration-500 
        font-${settings.fontFamily}
     `}>
       {/* Header / HUD */}
@@ -477,7 +477,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
 
       {/* Floating Capsule Segmented Progress Bar */}
       {showProgressBar && !isMinimalProgress && (
-        <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 z-[60] flex justify-center pointer-events-none px-4">
+        <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 z-60 flex justify-center pointer-events-none px-4">
           <div
             ref={progressBarRef}
             className={`w-[90vw] max-w-2xl backdrop-blur-md rounded-2xl p-2 sm:p-3 flex items-center gap-0.5 sm:gap-1 pointer-events-auto touch-none transition-all duration-500 overflow-hidden ${getCapsuleStyles()}`}
@@ -530,7 +530,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
           {/* Peek Tooltip (Global Portal Style) */}
           {peekTooltip && (
             <div
-              className={`fixed bottom-24 px-4 py-3 rounded-2xl shadow-2xl text-xs font-bold whitespace-nowrap pointer-events-none z-[100] border animate-in fade-in slide-in-from-bottom-2 ${getTooltipStyles()}`}
+              className={`fixed bottom-24 px-4 py-3 rounded-2xl shadow-2xl text-xs font-bold whitespace-nowrap pointer-events-none z-100 border animate-in fade-in slide-in-from-bottom-2 ${getTooltipStyles()}`}
               style={{ left: peekTooltip.x, transform: 'translateX(-50%)' }}
             >
               <div className="flex flex-col items-center gap-1">
@@ -552,7 +552,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
 
       {/* Minimal Progress Bar (Line) */}
       {isMinimalProgress && chunks && (
-        <div className="fixed top-0 left-0 h-1 bg-primary z-[60]" style={{ width: `${(activeIndex / chunks.length) * 100}%` }} />
+        <div className="fixed top-0 left-0 h-1 bg-primary z-60" style={{ width: `${(activeIndex / chunks.length) * 100}%` }} />
       )}
 
       {/* Main Scroll Container */}
@@ -590,7 +590,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
           ))}
 
           {/* End Spacer & Loader */}
-          <div className={`${isHorizontal ? 'w-screen h-full shrink-0 flex items-center justify-center snap-center snap-always' : 'h-[100dvh] w-full shrink-0 flex items-center justify-center snap-center snap-always'}`}>
+          <div className={`${isHorizontal ? 'w-screen h-full shrink-0 flex items-center justify-center snap-center snap-always' : 'h-dvh w-full shrink-0 flex items-center justify-center snap-center snap-always'}`}>
             <div
               ref={loaderRef}
               className={`flex flex-col items-center gap-4 text-muted/50 p-6 rounded-2xl ${!hasMoreContent ? 'opacity-100' : ''}`}
@@ -607,7 +607,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
                     <Zap className="text-yellow-400" size={32} />
                   </div>
                   <h3 className="text-xl font-bold text-muted">Continue the Story</h3>
-                  <p className="text-muted/70 text-sm max-w-[200px] text-center">
+                  <p className="text-muted/70 text-sm max-w-50 text-center">
                     You've reached the end of the processed content.
                   </p>
                   <button

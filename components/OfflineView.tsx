@@ -15,12 +15,12 @@ const OfflineView: React.FC<OfflineViewProps> = ({
   message = "It looks like you're offline. FlowRead needs an internet connection to process books with AI." 
 }) => {
   return (
-    <div className="fixed inset-0 z-[100] bg-background flex items-center justify-center p-6 animate-in fade-in duration-500">
+    <div className="fixed inset-0 z-100 bg-background flex items-center justify-center p-6 animate-in fade-in duration-500">
       <div className="max-w-md w-full text-center space-y-8">
         {/* Icon with animated pulses */}
         <div className="relative inline-block">
-          <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping duration-[3000ms]" />
-          <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse duration-[2000ms] scale-150" />
+          <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping duration-3000" />
+          <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse duration-2000 scale-150" />
           <div className="relative bg-surface p-8 rounded-full shadow-2xl border border-white/5">
             <WifiOff size={64} className="text-primary" />
           </div>
