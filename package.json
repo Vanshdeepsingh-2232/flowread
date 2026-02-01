@@ -1,12 +1,16 @@
 {
   "name": "flowread",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "release": "standard-version",
+    "release:minor": "standard-version --release-as minor",
+    "release:major": "standard-version --release-as major",
+    "release:patch": "standard-version --release-as patch"
   },
   "dependencies": {
     "@google/genai": "^1.32.0",
@@ -32,6 +36,7 @@
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.4.23",
     "postcss": "^8.5.6",
+    "standard-version": "^9.5.0",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
