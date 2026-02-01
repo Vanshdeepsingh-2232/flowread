@@ -1,5 +1,5 @@
 <div align="center">
-<img width="1200" height="475" alt="FlowRead Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+
 
 # 🌊 FlowRead
 ### *The Art of Frictionless Reading*
@@ -13,7 +13,7 @@ FlowRead isn't just an e-reader; it's an AI-powered reading companion designed t
 
 ## ✨ Features
 
-- **🧠 AI Smart Chunking**: Powered by Gemini 2.5, FlowRead automatically converts long PDFs and text files into semantic "cards" based on scene changes, plot points, or topic shifts.
+- **🧠 AI Smart Chunking**: Powered by Flow AI, FlowRead automatically converts long PDFs and text files into semantic "cards" based on scene changes, plot points, or topic shifts.
 - **🎭 Automated Genre Detection**: The app analyzes your book upon upload to tailor the UI and reading experience (Fiction vs. Non-Fiction vs. Technical).
 - **☁️ Seamless Cloud Sync**: Authenticate with Firebase to sync your reading progress and library across all your devices.
 - **⚡ Local-First Performance**: Uses Dexie (IndexedDB) for blazing fast, offline-ready library management.
@@ -28,7 +28,7 @@ FlowRead isn't just an e-reader; it's an AI-powered reading companion designed t
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18+)
-- [Google Gemini API Key](https://aistudio.google.com/app/apikey)
+- [AI API Key](https://aistudio.google.com/app/apikey)
 - Firebase Project (for Auth & Cloud Sync)
 
 ### Installation
@@ -46,12 +46,12 @@ FlowRead isn't just an e-reader; it's an AI-powered reading companion designed t
    node setupEnv.js
    ```
    *Then update `.env.local` with your own keys:*
-   - `GEMINI_API_KEY`: Your key from Google AI Studio.
+   - `API_KEY`: Your key from the AI provider dashboard.
    - `VITE_FIREBASE_API_KEY`: Found in Firebase Project Settings.
 
 3. **Enable API (Crucial)**
    Ensure the **Generative Language API** is enabled for your project:
-   [Enable Gemini API here](https://console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview)
+   [Enable AI API here](https://console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview)
 
 4. **Launch**
    ```bash
@@ -65,7 +65,7 @@ FlowRead isn't just an e-reader; it's an AI-powered reading companion designed t
 - **Styling**: Tailwind CSS
 - **Database**: Dexie.js (IndexedDB)
 - **Backend**: Firebase (Auth, Firestore, Storage)
-- **AI**: Google Gemini 2.5 Flash
+- **AI**: Flow AI Core (Gemini 2.5)
 
 ---
 

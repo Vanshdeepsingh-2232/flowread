@@ -68,7 +68,7 @@ const About: React.FC<AboutProps> = ({ onBack }) => {
                             <div>
                                 <h3 className="font-semibold text-text mb-1">AI Processing</h3>
                                 <p className="text-muted text-sm">
-                                    Google Gemini AI analyzes your book, understanding chapters, scenes, and narrative structure
+                                    Flow AI analyzes your book, understanding chapters, scenes, and narrative structure
                                 </p>
                             </div>
                         </div>
@@ -99,7 +99,7 @@ const About: React.FC<AboutProps> = ({ onBack }) => {
 
                         <div className="bg-surface border border-[var(--border-color)] rounded-xl p-4">
                             <Zap size={24} className="text-purple-500 mb-2" />
-                            <h3 className="font-semibold text-text mb-1">Google Gemini AI</h3>
+                            <h3 className="font-semibold text-text mb-1">Flow AI</h3>
                             <p className="text-xs text-muted">Advanced language understanding</p>
                         </div>
 

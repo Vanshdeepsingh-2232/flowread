@@ -10,7 +10,7 @@ const Features: React.FC<FeaturesProps> = ({ onBack }) => {
         {
             icon: <Brain size={28} className="text-purple-500" />,
             title: "AI-Powered Chunking",
-            description: "Smart content segmentation using Google Gemini AI for optimal reading flow"
+            description: "Smart content segmentation using Flow AI for optimal reading flow"
         },
         {
             icon: <BookOpen size={28} className="text-blue-500" />,
