@@ -27,6 +27,12 @@ export interface AIProvider {
         startIndex: number,
         previousContext?: string,
         bookTitle?: string,
-        genre?: Genre
+        genre?: Genre,
+        globalCharOffset?: number
     ): Promise<Chunk[]>;
+
+    /**
+     * Extracts a table of contents from the text.
+     */
+    extractTableOfContents(fullText: string): Promise<Array<{ title: string; startCharIndex: number }>>;
 }

@@ -10,6 +10,12 @@ export interface Book {
   processedCharCount: number; // Tracks how many characters have been chunked
   furthestReadIndex?: number; // Tracks the absolute furthest point user has reached
   genre?: 'fiction' | 'non_fiction' | 'technical' | 'script';
+  tableOfContents?: ChapterRef[];
+}
+
+export interface ChapterRef {
+  title: string;
+  startCharIndex: number; // Character position in rawContent
 }
 
 export interface Chunk {
@@ -17,6 +23,8 @@ export interface Chunk {
   bookId: string;
   index: number; // Serves as absoluteIndex
   text: string;
+  startCharIndex?: number;
+  endCharIndex?: number;
 
   // Anchor Metadata
   chapterTitle: string; // e.g. "Chapter 2: The Crystal Merchant"

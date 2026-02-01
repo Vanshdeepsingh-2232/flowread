@@ -48,12 +48,22 @@ export const semanticChunking = async (
     startIndex: number = 0,
     previousChapterContext?: string,
     bookTitle?: string,
-    genre: Genre = 'non_fiction'
+    genre: Genre = 'non_fiction',
+    globalCharOffset: number = 0
 ): Promise<Chunk[]> => {
     try {
-        return await provider.semanticChunking(textSegment, bookId, startIndex, previousChapterContext, bookTitle, genre);
+        return await provider.semanticChunking(textSegment, bookId, startIndex, previousChapterContext, bookTitle, genre, globalCharOffset);
     } catch (error) {
         logger.warn('AIService', 'Primary provider failed, using fallback chunking', error);
         return fallbackChunking(textSegment, bookId, startIndex, previousChapterContext);
+    }
+};
+
+export const extractTableOfContents = async (fullText: string) => {
+    try {
+        return await provider.extractTableOfContents(fullText);
+    } catch (error) {
+        logger.warn('AIService', 'TOC extraction failed', error);
+        return [];
     }
 };

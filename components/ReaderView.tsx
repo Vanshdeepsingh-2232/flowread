@@ -286,10 +286,20 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
   }, [chunks]);
 
   const hasMultipleChapters = useMemo(() => {
+    if (book.tableOfContents && book.tableOfContents.length > 1) return true;
     if (!chunks || chunks.length === 0) return false;
     const firstTitle = chunks[0].chapterTitle;
     return chunks.some(c => c.chapterTitle !== firstTitle);
-  }, [chunks]);
+  }, [chunks, book.tableOfContents]);
+
+  const nextChapterTOC = useMemo(() => {
+    if (!book.tableOfContents || !chunks || !chunks[activeIndex]) return null;
+    const currentChunk = chunks[activeIndex];
+    const currentStart = currentChunk.startCharIndex || (currentChunk.index * 500); // Rough fallback
+
+    // Find the immediate next chapter in TOC
+    return book.tableOfContents.find(ch => ch.startCharIndex > currentStart + 200);
+  }, [book.tableOfContents, chunks, activeIndex]);
 
   const handleSkipToStory = () => {
     if (storyStartIndex > -1) scrollToIndex(storyStartIndex);
@@ -298,25 +308,34 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
   const handleNextChapter = async () => {
     if (!chunks || isLoadingMore) return;
 
-    // 1. Try to find actual next chapter start
+    // 1. Smart Navigation via Table of Contents
+    if (nextChapterTOC) {
+      const targetChunkIndex = chunks.findIndex(c => (c.startCharIndex || 0) >= nextChapterTOC.startCharIndex);
+
+      if (targetChunkIndex !== -1) {
+        // We have the chunk! Jump to it.
+        scrollToIndex(targetChunkIndex);
+        return;
+      } else {
+        // We know a chapter exists, but it's not loaded.
+        console.log('📖 Next chapter exists but not loaded. Loading more...');
+        if (hasMoreContent && onLoadMore) {
+          await onTriggerLoadMore();
+          // Ideally we would keep loading until we get there, but let's do one step for safety
+        }
+        return;
+      }
+    }
+
+    // 2. Legacy/Simple Fallback
     const currentChap = chunks[activeIndex]?.chapterTitle;
     const nextChapIndex = chunks.findIndex((c, i) => i > activeIndex && c.chapterTitle !== currentChap);
 
     if (nextChapIndex !== -1) {
       scrollToIndex(nextChapIndex);
     } else {
-      // 2. Fallback: If no explicit next chapter found (e.g. still in Chapter 1)
-      // The user wants to "Skip" what is currently there and see what's next.
-
-      // Scroll to the very last chunk we have (Skip to end)
-      scrollToIndex(chunks.length - 1);
-
-      const hasMoreContent = (book.processedCharCount || 0) < (book.rawContent?.length || 0);
-
-      // If we can load more from disk/AI, trigger it
-      if (hasMoreContent) {
-        if (onLoadMore) await onTriggerLoadMore();
-      }
+      scrollToIndex(chunks.length - 1); // Skip to end
+      if (hasMoreContent && onLoadMore) await onTriggerLoadMore();
     }
   };
 
@@ -335,8 +354,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
   const showSkipIntro = storyStartIndex > 0 && activeIndex < storyStartIndex;
   const showResume = activeIndex < furthestIndex - 2;
   const isAtEnd = chunks && activeIndex >= chunks.length - 1;
-  // Only show Next Chapter if there is more content to load, OR if we have multiple chapters to navigate between.
-  const showNextChapter = (!isAtEnd || hasMoreContent) && (hasMoreContent || hasMultipleChapters);
+  const showNextChapter = nextChapterTOC || ((!isAtEnd || hasMoreContent) && (hasMoreContent || hasMultipleChapters));
 
   const getCapsuleStyles = () => {
     switch (settings.theme) {

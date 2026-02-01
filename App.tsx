@@ -4,8 +4,14 @@ import { logger } from './utils/logger';
 import { AppState, Book, UserSettings, Theme } from './types';
 import { db } from './db';
 import { extractTextFromPdf, extractTextFromTxt } from './services/pdfService';
-import { semanticChunking } from './services/geminiService';
+import { semanticChunking, cleanWebHtml, extractTableOfContents } from './services/ai';
 import { findSafeBatchEnd } from './utils/textUtils';
+import { uploadBookToCloud, getUserSettings, saveUserSettings } from './services/firebaseService';
+import { detectGenre } from './services/genreDetector';
+import WebReaderInput from './components/WebReaderInput';
+import { fetchAndParseArticle } from './services/webExtractor';
+import OfflineView from './components/OfflineView';
+import ConfirmDialog from './components/ConfirmDialog';
 
 // Eager Imports (Critical for First Paint)
 import Library from './components/Library';
@@ -16,13 +22,6 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useAuth } from './context/AuthContext';
 import { useBooks } from './hooks/useBooks';
-import { uploadBookToCloud, getUserSettings, saveUserSettings } from './services/firebaseService';
-import { detectGenre } from './services/genreDetector';
-import WebReaderInput from './components/WebReaderInput';
-import { fetchAndParseArticle } from './services/webExtractor';
-import { cleanWebHtml } from './services/geminiService';
-import OfflineView from './components/OfflineView';
-import ConfirmDialog from './components/ConfirmDialog';
 
 // Lazy Imports (Load only when needed)
 const ReaderView = React.lazy(() => import('./components/ReaderView'));
@@ -277,6 +276,11 @@ const App: React.FC = () => {
       const genre = await detectGenre(text);
       logger.info('App', `Detected genre: ${genre}`);
 
+      // 2.5 Extract Smart Table of Contents
+      setProcessingState({ active: true, message: 'Mapping chapters...', progress: 65 });
+      const toc = await extractTableOfContents(text);
+      logger.info('App', `Extracted TOC with ${toc.length} entries`);
+
       // 3. Smart Chunking (First Batch)
       const firstBatchEnd = findSafeBatchEnd(text, BATCH_SIZE);
       const firstBatchText = text.slice(0, firstBatchEnd);
@@ -297,7 +301,8 @@ const App: React.FC = () => {
         totalChunks: chunks.length,
         processedCharCount: firstBatchEnd,
         rawContent: text,
-        genre: genre
+        genre: genre,
+        tableOfContents: toc
       };
 
       logger.info('App', 'Saving book and chunks to local database');
