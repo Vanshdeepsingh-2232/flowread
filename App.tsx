@@ -30,6 +30,7 @@ const Profile = React.lazy(() => import('./components/Profile'));
 const Stats = React.lazy(() => import('./components/Stats'));
 const Features = React.lazy(() => import('./components/Features'));
 const About = React.lazy(() => import('./components/About'));
+const Changelog = React.lazy(() => import('./components/Changelog'));
 
 // Simple Loading Fallback
 const PageLoader = () => (
@@ -641,8 +642,11 @@ const App: React.FC = () => {
             case AppState.PROFILE:
               return <Profile
                 onBack={handleBackToLibrary}
-                currentTheme={settings.theme}
-                onThemeChange={(theme) => setSettings({ ...settings, theme })}
+                onClearCache={handleClearCache}
+                onExportHighlights={handleExportHighlights}
+                storageUsedMB={storageEstimate || 0}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+                onNavigateToChangelog={() => setAppState(AppState.CHANGELOG)}
               />;
 
             case AppState.WEB_READER:
@@ -662,6 +666,9 @@ const App: React.FC = () => {
 
             case AppState.ABOUT:
               return <About onBack={handleBackToLibrary} />;
+
+            case AppState.CHANGELOG:
+              return <Changelog onBack={handleBackToLibrary} />;
 
             case AppState.LIBRARY:
             default:

@@ -6,16 +6,17 @@ import { Heart, Clock, Share2, Check } from 'lucide-react';
 interface CardProps {
   chunk: Chunk;
   onFavorite: (chunk: Chunk) => void;
+  onShare: (chunk: Chunk) => void;
   isActive: boolean;
   isBookmarked?: boolean;
   bookTitle?: string;
   settings: UserSettings;
 }
 
-const Card: React.FC<CardProps> = ({ chunk, onFavorite, isActive, isBookmarked, bookTitle, settings }) => {
+const Card: React.FC<CardProps> = ({ chunk, onFavorite, onShare, isActive, isBookmarked, bookTitle, settings }) => {
   const lastTapRef = useRef<number>(0);
   const [showHeartAnim, setShowHeartAnim] = useState(false);
-  const [copied, setCopied] = useState(false);
+  // const [copied, setCopied] = useState(false); // Removed local copied state
 
   const handleTap = useCallback(() => {
     const now = Date.now();
@@ -30,12 +31,9 @@ const Card: React.FC<CardProps> = ({ chunk, onFavorite, isActive, isBookmarked, 
     lastTapRef.current = now;
   }, [chunk, onFavorite]);
 
-  const handleShare = (e: React.MouseEvent) => {
+  const handleShareClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const textToShare = chunk.shareableQuote || chunk.text;
-    navigator.clipboard.writeText(`"${textToShare}" - ${chunk.chapterTitle} (FlowRead)`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    onShare(chunk);
   };
 
   // Dynamic Text Styles based on slider (1-5)
@@ -334,11 +332,11 @@ const Card: React.FC<CardProps> = ({ chunk, onFavorite, isActive, isBookmarked, 
 
             {/* Share Button */}
             <button
-              onClick={handleShare}
+              onClick={handleShareClick}
               className="p-2 rounded-full hover:bg-white/10 transition-colors text-slate-400 hover:text-primary relative pointer-events-auto"
               title="Share Quote"
             >
-              {copied ? <Check size={16} className="text-green-400" /> : <Share2 size={16} />}
+              <Share2 size={16} />
             </button>
           </div>
         </div>

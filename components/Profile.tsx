@@ -1,78 +1,65 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Moon, Sun, Coffee, Edit2, User as UserIcon, Check, X, BookOpen } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, Coffee, Edit2, User as UserIcon, Check, X, BookOpen, TrendingUp, ExternalLink, Download, Trash2, ArrowRight } from 'lucide-react';
 import { Theme } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db } from '../config/firebase'; // Keep Firebase db
+import { db as localDb } from '../db'; // Import Dexie db as localDb
+import { useLiveQuery } from 'dexie-react-hooks';
 import { logger } from '../utils/logger';
+
+// Icons
+const SettingsIcon = ({ size = 24 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+    <circle cx="12" cy="12" r="3"></circle>
+  </svg>
+);
 
 interface ProfileProps {
   onBack: () => void;
-  currentTheme: Theme;
-  onThemeChange: (theme: Theme) => void;
+  onClearCache: () => void;
+  onExportHighlights: () => void;
+  storageUsedMB: number;
+  onOpenSettings: () => void;
+  onNavigateToChangelog: () => void;
 }
 
-const Profile: React.FC<ProfileProps> = ({ onBack, currentTheme, onThemeChange }) => {
+const Profile: React.FC<ProfileProps> = ({
+  onBack,
+  onClearCache,
+  onExportHighlights,
+  storageUsedMB,
+  onOpenSettings,
+  onNavigateToChangelog
+}) => {
   const { currentUser, userProfile, updateUserProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(userProfile?.displayName || '');
+  const [editedBio, setEditedBio] = useState(userProfile?.bio || '');
   const [saving, setSaving] = useState(false);
 
-  const handleSaveName = async () => {
-    if (!currentUser || !editedName.trim()) return;
+  // Scroll to top on mount to fix navigation scroll preservation
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
-    const newName = editedName.trim();
-    logger.info('Profile', `[v2.2] Optimistically updating name for: ${currentUser.uid}`, { newName });
-
-    setSaving(true);
-
-    // 1. Optimistic Update (Immediate UI response)
-    updateUserProfile({ displayName: newName });
-    setIsEditing(false);
-
-    try {
-      const userRef = doc(db, 'users', currentUser.uid);
-
-      logger.debug('Profile', 'Syncing change with Firestore...', {
-        persistence: 'Active',
-        timeout: '25s'
-      });
-
-      const updatePromise = setDoc(userRef, {
-        displayName: newName,
-        updatedAt: new Date()
-      }, { merge: true });
-
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Firestore operation timed out (25s)')), 25000)
-      );
-
-      await Promise.race([updatePromise, timeoutPromise]);
-
-      logger.success('Profile', '[v2.2] Firestore sync confirmed', { newName });
-      alert('✅ Profile updated and synced to cloud!');
-
-    } catch (error: any) {
-      logger.error('Profile', '[v2.2] Sync delayed or failed', { message: error.message });
-
-      if (error.message?.includes('timed out')) {
-        logger.warn('Profile', 'Firestore sync timed out, but change is cached locally.');
-        alert('💾 Profile updated! Changes saved locally and will sync when you\'re back online.');
-      } else {
-        alert('❌ Persistent Error: ' + (error.message || 'Unknown error'));
-        // Rollback if it's a hard failure (like permissions)
-        updateUserProfile({ displayName: userProfile?.displayName });
-      }
-    } finally {
-      logger.debug('Profile', '[v2.2] handleSaveName completed');
-      setSaving(false);
+  // Update effect when profile loads
+  React.useEffect(() => {
+    if (userProfile) {
+      setEditedName(prev => prev || userProfile.displayName);
+      setEditedBio(prev => prev || userProfile.bio || '');
     }
+  }, [userProfile]);
+
+  const getReaderRank = (chunks: number) => {
+    if (chunks > 1000) return { title: 'Literary Sage', color: 'text-purple-400', icon: '🧙‍♂️' };
+    if (chunks > 500) return { title: 'Bookworm', color: 'text-indigo-400', icon: '🐛' };
+    if (chunks > 100) return { title: 'Avid Learner', color: 'text-blue-400', icon: '📚' };
+    return { title: 'Novice', color: 'text-emerald-400', icon: '🌱' };
   };
 
-  const handleCancelEdit = () => {
-    setEditedName(userProfile?.displayName || '');
-    setIsEditing(false);
-  };
+  const rank = getReaderRank(userProfile?.stats?.totalChunksRead || 0);
 
   const getInitials = () => {
     if (currentUser?.photoURL) return null;
@@ -82,158 +69,277 @@ const Profile: React.FC<ProfileProps> = ({ onBack, currentTheme, onThemeChange }
     return currentUser?.email?.[0].toUpperCase() || 'U';
   };
 
+  const handleSaveName = async () => {
+    if (!currentUser || !editedName.trim()) return;
+
+    const newName = editedName.trim();
+    const newBio = editedBio.trim();
+
+    logger.info('Profile', `[v2.3] Saving profile for: ${currentUser.uid}`, { newName });
+    setSaving(true);
+
+    // 1. Optimistic Update
+    updateUserProfile({ displayName: newName, bio: newBio });
+    setIsEditing(false);
+
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      const updatePromise = setDoc(userRef, {
+        displayName: newName,
+        bio: newBio,
+        updatedAt: new Date()
+      }, { merge: true });
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Firestore operation timed out (25s)')), 25000)
+      );
+
+      await Promise.race([updatePromise, timeoutPromise]);
+      logger.success('Profile', 'Profile synced to cloud');
+
+    } catch (error: any) {
+      logger.error('Profile', 'Sync failed', error);
+      alert('💾 Profile saved locally! Will sync when online.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditedName(userProfile?.displayName || '');
+    setEditedBio(userProfile?.bio || '');
+    setIsEditing(false);
+  };
+
+  // Calculate Top Genres from Local DB
+  const topGenres = useLiveQuery(async () => {
+    const books = await localDb.books.toArray();
+    const genreCounts: Record<string, number> = {};
+
+    books.forEach(book => {
+      if (book.genre) {
+        genreCounts[book.genre] = (genreCounts[book.genre] || 0) + 1;
+      }
+    });
+
+    return Object.entries(genreCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([genre]) => genre);
+  });
+
   return (
-    <div className="min-h-screen bg-background text-text p-6 md:p-10 max-w-2xl mx-auto animate-fade-in">
-      <header className="mb-8 flex items-center gap-4">
-        <button
-          onClick={onBack}
-          className="p-2 hover:bg-surface rounded-full transition"
-        >
-          <ArrowLeft size={24} />
-        </button>
-        <h1 className="text-2xl font-bold">Profile & Settings</h1>
-      </header>
-
-      {/* Account Section */}
-      <section className="bg-surface p-6 rounded-2xl border border-slate-700/20 shadow-lg mb-6">
-        <h2 className="text-lg font-semibold mb-4 border-b border-slate-700/10 pb-2">Account</h2>
-
-        <div className="flex items-start gap-4">
-          <div className="w-20 h-20 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center border-2 border-primary/20 shrink-0">
-            {currentUser?.photoURL ? (
-              <img
-                src={currentUser.photoURL}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-2xl font-bold text-primary">
-                {getInitials()}
-              </span>
-            )}
+    <div className="min-h-screen w-full bg-background animate-fade-in">
+      <div className="max-w-4xl mx-auto p-6 md:p-10 pb-20 text-text">
+        <header className="mb-8 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onBack}
+              className="p-2 hover:bg-surface rounded-full transition"
+            >
+              <ArrowLeft size={24} />
+            </button>
+            <h1 className="text-3xl font-bold">Profile</h1>
           </div>
 
-          <div className="flex-1">
-            {isEditing ? (
+          <button
+            onClick={onOpenSettings}
+            className="flex items-center gap-2 px-4 py-2 bg-surface hover:bg-surface-accent border border-[var(--border-color)] rounded-full transition font-medium text-sm"
+          >
+            <SettingsIcon size={18} />
+            All Settings
+          </button>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          {/* Left Column: Identity & App Info */}
+          <div className="space-y-6">
+
+            {/* Account Card */}
+            <section className="bg-surface p-6 rounded-3xl border border-slate-700/20 shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full pointer-events-none" />
+
+              <div className="flex flex-col items-center text-center">
+                <div className="w-24 h-24 rounded-full overflow-hidden bg-surface-accent flex items-center justify-center border-4 border-background shadow-md mb-4 relative group cursor-pointer">
+                  {currentUser?.photoURL ? (
+                    <img
+                      src={currentUser.photoURL}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-3xl font-bold text-primary">
+                      {getInitials()}
+                    </span>
+                  )}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <Edit2 size={24} className="text-white" />
+                  </div>
+                </div>
+
+                {isEditing ? (
+                  <div className="space-y-3 w-full">
+                    <input
+                      type="text"
+                      value={editedName}
+                      onChange={(e) => setEditedName(e.target.value)}
+                      className="w-full bg-background border border-[var(--border-color)] rounded-lg p-2 text-text text-center font-bold text-xl focus:border-primary outline-none"
+                      placeholder="Display Name"
+                      disabled={saving}
+                      autoFocus
+                    />
+                    <div className="flex gap-2 justify-center">
+                      <button
+                        onClick={handleSaveName}
+                        disabled={saving || !editedName.trim()}
+                        className="px-4 py-1.5 bg-primary text-slate-900 rounded-full text-sm font-bold hover:brightness-110 disabled:opacity-50 transition"
+                      >
+                        {saving ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        disabled={saving}
+                        className="px-4 py-1.5 bg-surface-accent rounded-full text-sm font-medium hover:bg-slate-700/20 transition"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative z-10 w-full">
+                    <h2 className="text-2xl font-bold flex items-center justify-center gap-2 group cursor-pointer" onClick={() => setIsEditing(true)}>
+                      {userProfile?.displayName || 'Reader'}
+                      <Edit2 size={14} className="opacity-0 group-hover:opacity-50 transition-opacity" />
+                    </h2>
+
+                    <div className="flex flex-wrap items-center justify-center gap-2 mt-2 mb-4">
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full bg-surface-accent border border-white/5 ${rank.color} flex items-center gap-1`}>
+                        {rank.icon} {rank.title}
+                      </span>
+                      {/* Favorite Genres */}
+                      {topGenres?.map(genre => (
+                        <span key={genre} className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary uppercase tracking-wide">
+                          {genre.replace('_', ' ')}
+                        </span>
+                      ))}
+                    </div>
+
+                    {userProfile?.bio && (
+                      <p className="text-sm text-muted leading-relaxed mb-6 px-2 italic">
+                        "{userProfile.bio}"
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* App Info & About */}
+            <section className="bg-surface p-6 rounded-3xl border border-slate-700/20 shadow-lg">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted mb-4 opacity-70">App Info</h3>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between py-3 border-b border-white/5">
+                  <span className="font-medium text-sm">FlowRead Version</span>
+                  <span className="font-mono text-xs text-muted">v2.2.0-beta</span>
+                </div>
+
+                <button onClick={onNavigateToChangelog} className="w-full flex items-center justify-between py-3 hover:bg-white/5 rounded-lg px-2 -mx-2 transition group">
+                  <span className="font-medium text-sm group-hover:text-primary transition-colors">What's New</span>
+                  <ArrowRight size={16} className="text-muted group-hover:translate-x-1 transition-transform" />
+                </button>
+
+                <a href="https://github.com/Vanshdeepsingh-2232/flowread" target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-between py-3 hover:bg-white/5 rounded-lg px-2 -mx-2 transition group">
+                  <span className="font-medium text-sm group-hover:text-primary transition-colors">GitHub Repository</span>
+                  <ExternalLink size={16} className="text-muted" />
+                </a>
+              </div>
+            </section>
+          </div>
+
+          {/* Right Column: Stats & Data */}
+          <div className="md:col-span-8 space-y-6">
+
+            {/* Stats Preview */}
+            {userProfile?.stats && (
+              <section className="bg-surface p-6 rounded-3xl border border-slate-700/20 shadow-lg">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-muted mb-6 opacity-70">Reading Journey</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-background/50 p-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center">
+                    <BookOpen size={24} className="text-primary mb-2 opacity-80" />
+                    <p className="text-3xl font-bold">{userProfile.stats.booksRead}</p>
+                    <p className="text-xs text-muted uppercase tracking-wider font-semibold mt-1">Books</p>
+                  </div>
+                  <div className="bg-background/50 p-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center">
+                    <div className="flex gap-1 mb-2">
+                      {[1, 2, 3].map(i => <div key={i} className="w-1.5 h-3 bg-primary/40 rounded-full" />)}
+                    </div>
+                    <p className="text-3xl font-bold">{userProfile.stats.totalChunksRead}</p>
+                    <p className="text-xs text-muted uppercase tracking-wider font-semibold mt-1">Cards</p>
+                  </div>
+                </div>
+                <div className="mt-4 bg-gradient-to-r from-orange-500/10 to-transparent p-4 rounded-2xl border border-orange-500/20 flex items-center gap-4">
+                  <div className="p-3 bg-orange-500/20 text-orange-400 rounded-xl">
+                    <TrendingUp size={24} />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-orange-400">{userProfile.stats.currentStreak} Days</p>
+                    <p className="text-xs text-muted">Current Reading Streak</p>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Data Management */}
+            <section className="bg-surface p-6 rounded-3xl border border-slate-700/20 shadow-lg">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted mb-4 opacity-70">Data & Storage</h3>
+
+              <div className="mb-6">
+                <div className="flex justify-between items-end mb-2">
+                  <span className="text-2xl font-bold">{storageUsedMB.toFixed(1)} <span className="text-sm font-medium text-muted">MB</span></span>
+                  <span className="text-xs text-muted">Local Storage Used</span>
+                </div>
+                <div className="w-full h-2 bg-slate-700/20 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${Math.min((storageUsedMB / 50) * 100, 100)}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-muted mt-2 text-right">Rough estimate of stored books & highlights</p>
+              </div>
+
               <div className="space-y-3">
-                <input
-                  type="text"
-                  value={editedName}
-                  onChange={(e) => setEditedName(e.target.value)}
-                  className="w-full bg-background border border-(--bordesr-color) rounded-lg p-2 text-text focus:border-primary outline-none"
-                  placeholder="Display Name"
-                  disabled={saving}
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleSaveName}
-                    disabled={saving || !editedName.trim()}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition"
-                  >
-                    <Check size={16} />
-                    {saving ? 'Saving...' : 'Save'}
-                  </button>
-                  <button
-                    onClick={handleCancelEdit}
-                    disabled={saving}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-surface border border-(--border-color) rounded-lg text-sm font-medium hover:bg-background disabled:opacity-50 transition"
-                  >
-                    <X size={16} />
-                    Cancel
-                  </button>
-                </div>
+                <button
+                  onClick={onExportHighlights}
+                  className="w-full py-4 bg-background hover:bg-surface-accent border-2 border-dashed border-[var(--border-color)] hover:border-primary/50 text-muted hover:text-primary rounded-2xl font-medium flex items-center justify-center gap-2 transition-all group"
+                >
+                  <Download size={20} className="group-hover:-translate-y-0.5 transition-transform" />
+                  Export Brain Bank JSON
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (confirm('Are you sure you want to clear your local library? Saved Brain Bank highlights will remain.')) {
+                      onClearCache();
+                    }
+                  }}
+                  className="w-full py-3 text-red-400 hover:bg-red-500/10 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition"
+                >
+                  <Trash2 size={16} />
+                  Clear Library Cache
+                </button>
               </div>
-            ) : (
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-medium text-lg">{userProfile?.displayName || 'Reader'}</h3>
-                  <button
-                    onClick={() => {
-                      setEditedName(userProfile?.displayName || '');
-                      setIsEditing(true);
-                    }}
-                    className="p-1.5 hover:bg-background rounded-full transition text-muted hover:text-primary"
-                    title="Edit Name"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                </div>
-                <p className="text-sm text-muted">{currentUser?.email}</p>
-                <p className="text-xs text-muted mt-1">
-                  Joined {userProfile?.createdAt ? new Date(userProfile.createdAt.toDate?.() || userProfile.createdAt).toLocaleDateString() : 'Recently'}
-                </p>
-              </div>
-            )}
+            </section>
           </div>
+
         </div>
-      </section>
-
-      {/* Appearance Section */}
-      <section className="bg-surface p-6 rounded-2xl border border-slate-700/20 shadow-lg mb-6">
-        <h2 className="text-lg font-semibold mb-4 border-b border-slate-700/10 pb-2">Appearance</h2>
-
-        <div className="grid grid-cols-1 gap-4">
-          <div>
-            <p className="text-sm text-muted mb-3">Color Theme</p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => onThemeChange('midnight')}
-                className={`flex-1 p-4 rounded-xl border flex flex-col items-center gap-2 transition ${currentTheme === 'midnight' ? 'border-primary bg-primary/10 text-primary' : 'border-slate-700/20 hover:bg-slate-700/10'}`}
-              >
-                <Moon size={24} />
-                <span className="text-sm font-medium">Midnight</span>
-              </button>
-
-              <button
-                onClick={() => onThemeChange('slate')}
-                className={`flex-1 p-4 rounded-xl border flex flex-col items-center gap-2 transition ${currentTheme === 'slate' ? 'border-primary bg-primary/10 text-primary' : 'border-slate-700/20 hover:bg-slate-700/10'}`}
-              >
-                <Sun size={24} />
-                <span className="text-sm font-medium">Slate</span>
-              </button>
-
-              <button
-                onClick={() => onThemeChange('coffee')}
-                className={`flex-1 p-4 rounded-xl border flex flex-col items-center gap-2 transition ${currentTheme === 'coffee' ? 'border-primary bg-primary/10 text-primary' : 'border-slate-700/20 hover:bg-slate-700/10'}`}
-              >
-                <Coffee size={24} />
-                <span className="text-sm font-medium">Coffee</span>
-              </button>
-
-              <button
-                onClick={() => onThemeChange('textured')}
-                className={`flex-1 p-4 rounded-xl border flex flex-col items-center gap-2 transition ${currentTheme === 'textured' ? 'border-primary bg-primary/10 text-primary' : 'border-slate-700/20 hover:bg-slate-700/10'}`}
-              >
-                <BookOpen size={24} />
-                <span className="text-sm font-medium">Textured</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Preview */}
-      {userProfile?.stats && (
-        <section className="bg-surface p-6 rounded-2xl border border-slate-700/20 shadow-lg">
-          <h2 className="text-lg font-semibold mb-4 border-b border-slate-700/10 pb-2">Reading Stats</h2>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold text-primary">{userProfile.stats.booksRead}</p>
-              <p className="text-xs text-muted mt-1">Books Read</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-primary">{userProfile.stats.totalChunksRead}</p>
-              <p className="text-xs text-muted mt-1">Cards Read</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-primary">{userProfile.stats.currentStreak}</p>
-              <p className="text-xs text-muted mt-1">Day Streak</p>
-            </div>
-          </div>
-        </section>
-      )}
+      </div>
     </div>
   );
 };
 
+
 export default Profile;
+
+

@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { Book, Chunk, UserSettings, Theme } from '../types';
 import Card from './Card';
+import ShareModal from './ShareModal';
 import { ArrowLeft, Clock, Zap, Download, SkipForward, FastForward, ChevronDown, Settings } from 'lucide-react';
 import { updateReadingStreak } from '../hooks/useReadingStats';
 
@@ -29,6 +30,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
   // State
   const [activeIndex, setActiveIndex] = useState(book.lastReadIndex || 0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [chunkToShare, setChunkToShare] = useState<Chunk | null>(null);
 
   // Prefetch tracking to avoid spamming
   const prefetchTriggeredRef = useRef<number>(0);
@@ -601,6 +603,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
                 isActive={idx === activeIndex}
                 isBookmarked={bookmarkedChunkIds.has(chunk.id)}
                 onFavorite={handleFavorite}
+                onShare={setChunkToShare}
                 bookTitle={book.title}
                 settings={settings}
               />
@@ -646,7 +649,19 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
           </div>
         </div>
       </div>
-    </div>
+
+      {
+        chunkToShare && (
+          <ShareModal
+            chunk={chunkToShare}
+            bookId={book.id}
+            bookTitle={book.title}
+            onClose={() => setChunkToShare(null)}
+            currentTheme={settings.theme}
+          />
+        )
+      }
+    </div >
   );
 };
 

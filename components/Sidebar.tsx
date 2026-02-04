@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Home, User, Server, Settings, X, BookOpen, BarChart2, LogOut } from 'lucide-react';
+import { Home, User, Server, Settings, X, BookOpen, BarChart2, LogOut, Clock } from 'lucide-react';
 import { AppState } from '../types';
 import { logoutUser } from '../services/authService';
 
@@ -90,6 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               { id: AppState.BRAIN_BANK, label: 'Brain Bank', icon: Server },
               { id: AppState.PROFILE, label: 'Profile', icon: User },
               { id: AppState.STATS, label: 'Stats', icon: BarChart2 },
+              { id: AppState.CHANGELOG, label: "What's New", icon: Clock },
             ].map(item => (
               <button
                 key={item.id}
@@ -127,7 +128,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               Sign Out
             </button>
 
-            <p className="text-center text-xs text-muted/40 mt-6 font-mono">v0.5.0 Beta</p>
+            <p className="text-center text-xs text-muted/40 mt-6 font-mono cursor-pointer hover:text-primary transition-colors" onClick={() => { onNavigate(AppState.CHANGELOG); onClose(); }}>v0.0.1</p>
           </div>
 
         </div>

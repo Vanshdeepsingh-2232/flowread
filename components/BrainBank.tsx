@@ -71,7 +71,7 @@ const BrainBank: React.FC<BrainBankProps> = ({ onBack, onNavigate }) => {
                             {/* Content */}
                             <div className="relative z-10">
                                 <Quote size={20} className="text-primary/40 mb-3" />
-                                <p className="font-serif text-lg leading-relaxed line-clamp-6 text-text/90">
+                                <p className="font-serif text-lg leading-relaxed text-text/90">
                                     {item.text}
                                 </p>
                             </div>

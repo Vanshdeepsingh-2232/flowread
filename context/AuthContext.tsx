@@ -15,6 +15,8 @@ interface UserProfile {
         totalChunksRead: number;
         currentStreak: number;
     };
+    bio?: string;
+    favoriteGenres?: string[];
 }
 
 interface AuthContextType {

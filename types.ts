@@ -66,6 +66,7 @@ export enum AppState {
   FEATURES = 'FEATURES',
   ABOUT = 'ABOUT',
   WEB_READER = 'WEB_READER',
+  CHANGELOG = 'CHANGELOG',
 }
 
 // --- User Settings & Preferences ---
