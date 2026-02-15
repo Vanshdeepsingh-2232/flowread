@@ -7,6 +7,7 @@ import { db } from '../config/firebase'; // Keep Firebase db
 import { db as localDb } from '../db'; // Import Dexie db as localDb
 import { useLiveQuery } from 'dexie-react-hooks';
 import { logger } from '../utils/logger';
+import { version as appVersion } from '../package.json';
 
 // Icons
 const SettingsIcon = ({ size = 24 }: { size?: number }) => (
@@ -242,7 +243,7 @@ const Profile: React.FC<ProfileProps> = ({
               <div className="space-y-1">
                 <div className="flex items-center justify-between py-3 border-b border-white/5">
                   <span className="font-medium text-sm">FlowRead Version</span>
-                  <span className="font-mono text-xs text-muted">v2.2.0-beta</span>
+                  <span className="font-mono text-xs text-muted">v{appVersion}</span>
                 </div>
 
                 <button onClick={onNavigateToChangelog} className="w-full flex items-center justify-between py-3 hover:bg-white/5 rounded-lg px-2 -mx-2 transition group">

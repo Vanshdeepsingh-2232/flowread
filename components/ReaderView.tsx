@@ -31,6 +31,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
   const [activeIndex, setActiveIndex] = useState(book.lastReadIndex || 0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [chunkToShare, setChunkToShare] = useState<Chunk | null>(null);
+  const [showPillsExpanded, setShowPillsExpanded] = useState(true);
 
   // Prefetch tracking to avoid spamming
   const prefetchTriggeredRef = useRef<number>(0);
@@ -71,6 +72,14 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
       }, 100);
     }
   }, [chunks]);
+
+  // Auto-collapse pills after learning period
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowPillsExpanded(false);
+    }, 4000); // 4 seconds of 'learning'
+    return () => clearTimeout(timer);
+  }, []);
 
   // Helper to scroll
   const scrollToIndex = (index: number, behavior: ScrollBehavior = 'smooth') => {
@@ -142,6 +151,9 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
     // Child 0 = spacer
     // Child 1..N = Cards
     // Child N+1 = spacer
+
+    // Collapse pills on first real interaction
+    if (showPillsExpanded) setShowPillsExpanded(false);
 
     for (let i = 1; i < children.length - 1; i++) {
       const child = children[i];
@@ -445,39 +457,48 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
         </button>
 
         {/* Right: Controls Stack */}
-        <div className="flex flex-col items-end gap-2 pointer-events-auto">
-          {/* Settings Button */}
-          <button
-            onClick={onOpenSettings}
-            className="p-2 mb-2 bg-surface/80 backdrop-blur rounded-full text-text shadow-lg hover:opacity-80 transition border border-white/5"
-          >
-            <Settings size={20} />
-          </button>
+        <div className="flex flex-col items-end gap-3 pointer-events-auto">
+          {/* Top Row: Info & Settings */}
+          <div className="flex items-center gap-2">
+            {/* Time Badge */}
+            <div className="px-3 py-1 bg-surface/80 backdrop-blur border border-white/5 rounded-full cursor-default text-xs font-mono text-primary shadow-lg flex items-center gap-2 transition hover:bg-surface">
+              <Clock size={12} />
+              <span className="hidden sm:inline">{timeRemaining} min left</span>
+              <span className="sm:hidden">{timeRemaining}m</span>
+            </div>
 
-          {/* Time Badge */}
-          <div className="px-3 py-1 bg-surface backdrop-blur rounded-full cursor-default text-xs font-mono text-primary shadow-lg flex items-center gap-2 mb-2 border border-white/5">
-            <Clock size={12} />
-            <span>{timeRemaining} min left</span>
+            <button
+              onClick={onOpenSettings}
+              className="p-2 bg-surface/80 backdrop-blur rounded-full text-text shadow-lg hover:bg-surface transition border border-white/5"
+              title="Reading Settings"
+            >
+              <Settings size={20} />
+            </button>
           </div>
 
-          <div className="flex flex-col gap-2 items-end pointer-events-auto">
+          {/* Action Row: Contextual Buttons (Collapsing Pills) */}
+          <div className="flex flex-col items-end gap-2">
             {showResume && (
               <button
                 onClick={handleResume}
-                className="px-3 py-1.5 bg-emerald-600 text-white rounded-full text-xs font-bold shadow-lg flex items-center gap-1 hover:scale-105 transition animate-pulse"
+                className={`group flex items-center gap-0 ${showPillsExpanded ? 'gap-2 px-4' : 'hover:gap-2 px-2.5 py-2.5 hover:px-4'} py-2.5 bg-emerald-600/90 backdrop-blur text-white rounded-full text-xs font-bold shadow-xl transition-all duration-300 border border-emerald-500/30 overflow-hidden`}
               >
-                <ChevronDown size={14} />
-                Resume
+                <ChevronDown size={14} className="shrink-0" />
+                <span className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${showPillsExpanded ? 'max-w-[100px] opacity-100' : 'max-w-0 group-hover:max-w-[100px] opacity-0 group-hover:opacity-100'}`}>
+                  Resume Reading
+                </span>
               </button>
             )}
 
             {showSkipIntro && (
               <button
                 onClick={handleSkipToStory}
-                className="px-3 py-1.5 bg-primary text-slate-900 rounded-full text-xs font-bold shadow-lg flex items-center gap-1 hover:scale-105 transition"
+                className={`group flex items-center gap-0 ${showPillsExpanded ? 'gap-2 px-4' : 'hover:gap-2 px-2.5 py-2.5 hover:px-4'} py-2.5 bg-primary text-slate-900 rounded-full text-xs font-bold shadow-xl transition-all duration-300 border border-white/10 overflow-hidden`}
               >
-                <SkipForward size={14} />
-                Start Story
+                <SkipForward size={14} className="shrink-0" />
+                <span className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${showPillsExpanded ? 'max-w-[100px] opacity-100' : 'max-w-0 group-hover:max-w-[100px] opacity-0 group-hover:opacity-100'}`}>
+                  Start Story
+                </span>
               </button>
             )}
 
@@ -485,10 +506,16 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
               <button
                 onClick={handleNextChapter}
                 disabled={isLoadingMore}
-                className={`px-3 py-1.5 bg-surface backdrop-blur border border-white/10 text-text rounded-full text-xs font-bold shadow-lg flex items-center gap-1 transition ${isLoadingMore ? 'opacity-50 cursor-wait' : 'hover:bg-surface/80'}`}
+                className={`group flex items-center gap-0 ${showPillsExpanded ? 'gap-2 px-4' : 'hover:gap-2 px-2.5 py-2.5 hover:px-4'} py-2.5 bg-surface/90 backdrop-blur border border-white/10 text-text rounded-full text-xs font-black tracking-wide shadow-2xl transition-all duration-300 overflow-hidden ${isLoadingMore ? 'opacity-50 cursor-wait' : 'hover:bg-primary hover:text-slate-900'}`}
               >
-                {isLoadingMore ? <div className="animate-spin w-3 h-3 border-2 border-primary border-t-transparent rounded-full" /> : <FastForward size={14} />}
-                {isLoadingMore ? 'Loading...' : 'Next Chapter'}
+                {isLoadingMore ? (
+                  <div className="animate-spin w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full" />
+                ) : (
+                  <FastForward size={14} className="shrink-0" />
+                )}
+                <span className={`overflow-hidden whitespace-nowrap transition-all duration-300 uppercase ${showPillsExpanded ? 'max-w-[100px] opacity-100' : 'max-w-0 group-hover:max-w-[100px] opacity-0 group-hover:opacity-100'}`}>
+                  {isLoadingMore ? 'Next...' : 'Next Chapter'}
+                </span>
               </button>
             )}
           </div>
@@ -496,84 +523,88 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
       </div>
 
       {/* Floating Capsule Segmented Progress Bar */}
-      {showProgressBar && !isMinimalProgress && (
-        <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 z-60 flex justify-center pointer-events-none px-4">
-          <div
-            ref={progressBarRef}
-            className={`w-[90vw] max-w-2xl backdrop-blur-md rounded-2xl p-2 sm:p-3 flex items-center gap-0.5 sm:gap-1 pointer-events-auto touch-none transition-all duration-500 overflow-hidden ${getCapsuleStyles()}`}
-            onTouchStart={handleTouchMove}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onMouseEnter={handleTouchMove}
-            onMouseMove={handleTouchMove}
-            onMouseLeave={handleTouchEnd}
-          >
-            {currentChapterSegments.map((seg) => {
-              let status: 'read' | 'current' | 'unread' = 'unread';
-              if (activeIndex > seg.end) status = 'read';
-              else if (activeIndex >= seg.start) status = 'current';
+      {
+        showProgressBar && !isMinimalProgress && (
+          <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 z-60 flex justify-center pointer-events-none px-4">
+            <div
+              ref={progressBarRef}
+              className={`w-[90vw] max-w-2xl backdrop-blur-md rounded-2xl p-2 sm:p-3 flex items-center gap-0.5 sm:gap-1 pointer-events-auto touch-none transition-all duration-500 overflow-hidden ${getCapsuleStyles()}`}
+              onTouchStart={handleTouchMove}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onMouseEnter={handleTouchMove}
+              onMouseMove={handleTouchMove}
+              onMouseLeave={handleTouchEnd}
+            >
+              {currentChapterSegments.map((seg) => {
+                let status: 'read' | 'current' | 'unread' = 'unread';
+                if (activeIndex > seg.end) status = 'read';
+                else if (activeIndex >= seg.start) status = 'current';
 
-              const isCurrent = status === 'current';
-              const isRead = status === 'read';
+                const isCurrent = status === 'current';
+                const isRead = status === 'read';
 
-              const innerProgress = isCurrent
-                ? ((activeIndex - seg.start + 1) / (seg.end - seg.start + 1)) * 100
-                : 0;
+                const innerProgress = isCurrent
+                  ? ((activeIndex - seg.start + 1) / (seg.end - seg.start + 1)) * 100
+                  : 0;
 
-              return (
-                <div
-                  key={seg.id}
-                  data-segment-id={seg.id}
-                  className={`
+                return (
+                  <div
+                    key={seg.id}
+                    data-segment-id={seg.id}
+                    className={`
                     h-3 rounded-full transition-all duration-300 relative overflow-hidden group
                     ${isRead ? 'bg-primary' : ''} 
                     ${status === 'unread' ? getUnreadColor() : ''}
                     ${isCurrent ? getActivePillStyle() : ''}
                   `}
-                  style={{ flexGrow: seg.count, minWidth: '2px' }}
-                >
-                  {/* Precise Inner Cursor for Current Segment */}
-                  {isCurrent && (
-                    <div
-                      className="absolute left-0 top-0 bottom-0 bg-primary rounded-full transition-all duration-300"
-                      style={{ width: `${innerProgress}%` }}
-                    />
-                  )}
+                    style={{ flexGrow: seg.count, minWidth: '2px' }}
+                  >
+                    {/* Precise Inner Cursor for Current Segment */}
+                    {isCurrent && (
+                      <div
+                        className="absolute left-0 top-0 bottom-0 bg-primary rounded-full transition-all duration-300"
+                        style={{ width: `${innerProgress}%` }}
+                      />
+                    )}
 
-                  {/* Hover/Touch Highlight Overlay */}
-                  <div className="absolute inset-0 bg-white opacity-0 hover:opacity-20 transition-opacity" />
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Peek Tooltip (Global Portal Style) */}
-          {peekTooltip && (
-            <div
-              className={`fixed bottom-24 px-4 py-3 rounded-2xl shadow-2xl text-xs font-bold whitespace-nowrap pointer-events-none z-100 border animate-in fade-in slide-in-from-bottom-2 ${getTooltipStyles()}`}
-              style={{ left: peekTooltip.x, transform: 'translateX(-50%)' }}
-            >
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-sm font-bold text-primary">{peekTooltip.label.length > 25 ? peekTooltip.label.substring(0, 25) + '...' : peekTooltip.label}</span>
-                <span className="text-[10px] opacity-70 font-mono tracking-wide uppercase">{peekTooltip.time} min read</span>
-              </div>
-
-              {/* Arrow */}
-              <div className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 border-b border-r rotate-45 ${settings.theme === 'daylight' ? 'bg-white border-slate-200' :
-                settings.theme === 'paper' ? 'bg-[#efe6d5] border-[#8b5e34]/20' :
-                  settings.theme === 'midnight' ? 'bg-slate-900 border-slate-700/50' :
-                    settings.theme === 'textured' ? 'bg-[#f4e4d4] border-[#d4c5b9]' :
-                      'bg-slate-800 border-slate-600'
-                }`} />
+                    {/* Hover/Touch Highlight Overlay */}
+                    <div className="absolute inset-0 bg-white opacity-0 hover:opacity-20 transition-opacity" />
+                  </div>
+                );
+              })}
             </div>
-          )}
-        </div>
-      )}
+
+            {/* Peek Tooltip (Global Portal Style) */}
+            {peekTooltip && (
+              <div
+                className={`fixed bottom-24 px-4 py-3 rounded-2xl shadow-2xl text-xs font-bold whitespace-nowrap pointer-events-none z-100 border animate-in fade-in slide-in-from-bottom-2 ${getTooltipStyles()}`}
+                style={{ left: peekTooltip.x, transform: 'translateX(-50%)' }}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-sm font-bold text-primary">{peekTooltip.label.length > 25 ? peekTooltip.label.substring(0, 25) + '...' : peekTooltip.label}</span>
+                  <span className="text-[10px] opacity-70 font-mono tracking-wide uppercase">{peekTooltip.time} min read</span>
+                </div>
+
+                {/* Arrow */}
+                <div className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 border-b border-r rotate-45 ${settings.theme === 'daylight' ? 'bg-white border-slate-200' :
+                  settings.theme === 'paper' ? 'bg-[#efe6d5] border-[#8b5e34]/20' :
+                    settings.theme === 'midnight' ? 'bg-slate-900 border-slate-700/50' :
+                      settings.theme === 'textured' ? 'bg-[#f4e4d4] border-[#d4c5b9]' :
+                        'bg-slate-800 border-slate-600'
+                  }`} />
+              </div>
+            )}
+          </div>
+        )
+      }
 
       {/* Minimal Progress Bar (Line) */}
-      {isMinimalProgress && chunks && (
-        <div className="fixed top-0 left-0 h-1 bg-primary z-60" style={{ width: `${(activeIndex / chunks.length) * 100}%` }} />
-      )}
+      {
+        isMinimalProgress && chunks && (
+          <div className="fixed top-0 left-0 h-1 bg-primary z-60" style={{ width: `${(activeIndex / chunks.length) * 100}%` }} />
+        )
+      }
 
       {/* Main Scroll Container */}
       <div
@@ -620,7 +651,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, onBack, onLoadMore, setti
               {isLoadingMore ? (
                 <>
                   <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                  <p className="text-primary font-medium">Processing next section...</p>
+                  <p className="text-primary font-medium">Optimizing text flow...</p>
                 </>
               ) : hasMoreContent ? (
                 <>
