@@ -2,14 +2,45 @@ import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signInWithPopup,
+    signInWithRedirect,
     GoogleAuthProvider,
     signOut,
     onAuthStateChanged,
     User
 } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
 import { logger } from "../utils/logger";
+
+const shouldUseRedirectForGoogleSignIn = () => {
+    if (typeof window === 'undefined') return false;
+
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    return isStandalone || isMobile;
+};
+
+const ensureUserProfile = async (user: User) => {
+    const userDocRef = doc(db, "users", user.uid);
+    const userDoc = await getDoc(userDocRef);
+
+    if (!userDoc.exists()) {
+        logger.info('AuthService', 'Creating missing user profile in Firestore', { uid: user.uid });
+        await setDoc(userDocRef, {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName || "Reader",
+            createdAt: new Date(),
+            stats: {
+                booksRead: 0,
+                totalChunksRead: 0,
+                currentStreak: 0
+            }
+        });
+        logger.success('AuthService', 'User profile created in Firestore', { uid: user.uid });
+    }
+};
 
 // 1. Sign Up & Create User Profile
 export const registerUser = async (email: string, password: string, displayName: string): Promise<User> => {
@@ -23,19 +54,7 @@ export const registerUser = async (email: string, password: string, displayName:
 
         // Create the user document in Firestore immediately
         logger.info('AuthService', 'Creating user profile in Firestore');
-        await setDoc(doc(db, "users", user.uid), {
-            uid: user.uid,
-            email: user.email,
-            displayName: displayName || "Reader",
-            createdAt: new Date(),
-            stats: {
-                booksRead: 0,
-                totalChunksRead: 0,
-                currentStreak: 0
-            }
-        });
-
-        logger.success('AuthService', 'User profile created in Firestore', { uid: user.uid });
+        await ensureUserProfile({ ...user, displayName: displayName || user.displayName } as User);
         return user;
     } catch (error: any) {
         logger.error('AuthService', 'Registration failed', {
@@ -63,44 +82,29 @@ export const loginUser = (email: string, password: string) => {
 };
 
 // 3. Google Sign-In
-export const signInWithGoogle = async (): Promise<User> => {
+export const signInWithGoogle = async (): Promise<User | void> => {
     logger.info('AuthService', 'Google sign-in initiated');
 
     try {
         const provider = new GoogleAuthProvider();
-        const userCredential = await signInWithPopup(auth, provider);
-        const user = userCredential.user;
 
-        logger.success('AuthService', 'Google sign-in successful', { uid: user.uid, email: user.email });
-
-        // Check if user profile exists, if not create it (for first-time Google users)
-        const { doc: docFunc, getDoc, setDoc: setDocFunc } = await import("firebase/firestore");
-        const userDocRef = docFunc(db, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (!userDoc.exists()) {
-            logger.info('AuthService', 'First-time Google user, creating profile');
-
-            // First-time Google sign-in, create profile
-            await setDocFunc(userDocRef, {
-                uid: user.uid,
-                email: user.email,
-                displayName: user.displayName || "Reader",
-                createdAt: new Date(),
-                stats: {
-                    booksRead: 0,
-                    totalChunksRead: 0,
-                    currentStreak: 0
-                }
-            });
-
-            logger.success('AuthService', 'Google user profile created', { uid: user.uid });
-        } else {
-            logger.info('AuthService', 'Returning Google user, profile exists');
+        if (shouldUseRedirectForGoogleSignIn()) {
+            await signInWithRedirect(auth, provider);
+            return;
         }
 
-        return user;
+        const userCredential = await signInWithPopup(auth, provider);
+        await ensureUserProfile(userCredential.user);
+        logger.success('AuthService', 'Google sign-in successful', { uid: userCredential.user.uid, email: userCredential.user.email });
+        return userCredential.user;
     } catch (error: any) {
+        if (error?.code === 'auth/popup-blocked') {
+            logger.warn('AuthService', 'Google popup blocked, retrying with redirect');
+            const provider = new GoogleAuthProvider();
+            await signInWithRedirect(auth, provider);
+            return;
+        }
+
         logger.error('AuthService', 'Google sign-in failed', {
             code: error.code,
             message: error.message
@@ -127,9 +131,14 @@ export const logoutUser = () => {
 export const subscribeToAuthChanges = (callback: (user: User | null) => void) => {
     logger.info('AuthService', 'Subscribing to auth state changes');
 
-    return onAuthStateChanged(auth, (user) => {
+    return onAuthStateChanged(auth, async (user) => {
         if (user) {
             logger.info('AuthService', 'Auth state changed: User logged in', { uid: user.uid, email: user.email });
+            try {
+                await ensureUserProfile(user);
+            } catch (error) {
+                logger.error('AuthService', 'Failed to ensure user profile after auth change', error);
+            }
         } else {
             logger.info('AuthService', 'Auth state changed: User logged out');
         }

@@ -1,0 +1,35 @@
+{
+  "name": "FlowRead",
+  "short_name": "FlowRead",
+  "description": "AI-powered smart reading with immersive cards, local library access, and installable app support.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B1120",
+  "theme_color": "#0B1120",
+  "icons": [
+    {
+      "src": "/logo2.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Library",
+      "short_name": "Library",
+      "description": "Open your FlowRead library.",
+      "url": "/?view=library",
+      "icons": [{ "src": "/logo2.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Brain Bank",
+      "short_name": "Brain Bank",
+      "description": "Jump into your saved highlights.",
+      "url": "/?view=brain-bank",
+      "icons": [{ "src": "/logo2.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}
