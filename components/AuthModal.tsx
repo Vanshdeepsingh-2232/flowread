@@ -9,6 +9,23 @@ interface AuthModalProps {
     onClose: () => void;
 }
 
+const getFriendlyAuthError = (err: { code?: string; message?: string }) => {
+    const currentHost = window.location.hostname;
+
+    if (err.code === 'auth/wrong-password') return 'Incorrect password.';
+    if (err.code === 'auth/user-not-found') return 'No account found with this email.';
+    if (err.code === 'auth/email-already-in-use') return 'Email already in use.';
+    if (err.code === 'auth/invalid-email') return 'Invalid email address.';
+    if (err.code === 'auth/weak-password') return 'Password should be at least 6 characters.';
+    if (err.code === 'auth/popup-closed-by-user') return 'Sign-in cancelled.';
+    if (err.code === 'auth/popup-blocked') return 'Pop-up blocked. Please allow pop-ups for this site.';
+    if (err.code === 'auth/unauthorized-domain') {
+        return `Google sign-in is not enabled for ${currentHost}. Add this domain in Firebase Console → Authentication → Settings → Authorized domains.`;
+    }
+
+    return `Error: ${err.code} - ${err.message}`;
+};
+
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
@@ -38,13 +55,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             onClose(); // Close modal on success
         } catch (err: any) {
             setLoading(false);
-            // Friendly error messages
-            if (err.code === 'auth/wrong-password') setError('Incorrect password.');
-            else if (err.code === 'auth/user-not-found') setError('No account found with this email.');
-            else if (err.code === 'auth/email-already-in-use') setError('Email already in use.');
-            else if (err.code === 'auth/invalid-email') setError('Invalid email address.');
-            else if (err.code === 'auth/weak-password') setError('Password should be at least 6 characters.');
-            else setError(`Error: ${err.code} - ${err.message}`);
+            setError(getFriendlyAuthError(err));
             logger.error('AuthModal', "Auth Error", err);
         }
     };
@@ -140,11 +151,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                         setLoading(true);
                         try {
                             await signInWithGoogle();
-                            onClose();
                         } catch (err: any) {
-                            if (err.code === 'auth/popup-closed-by-user') setError('Sign-in cancelled.');
-                            else if (err.code === 'auth/popup-blocked') setError('Pop-up blocked. Please allow pop-ups for this site.');
-                            else setError(`Error: ${err.code} - ${err.message}`);
+                            setError(getFriendlyAuthError(err));
                             logger.error('AuthModal', "Google Sign-In Error", err);
                         } finally {
                             setLoading(false);
