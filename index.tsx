@@ -63,3 +63,14 @@ root.render(
   </React.StrictMode>
 );
 logger.success('System', 'React root rendered');
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        logger.success('System', 'Service worker registered', { scope: registration.scope });
+      })
+      .catch((error) => {
+        logger.error('System', 'Service worker registration failed', error);
+      });
+  });
+}
