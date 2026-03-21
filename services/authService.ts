@@ -1,6 +1,7 @@
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
+    signInWithPopup,
     signInWithRedirect,
     GoogleAuthProvider,
     signOut,
@@ -10,6 +11,15 @@ import {
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
 import { logger } from "../utils/logger";
+
+const shouldUseRedirectForGoogleSignIn = () => {
+    if (typeof window === 'undefined') return false;
+
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    return isStandalone || isMobile;
+};
 
 const ensureUserProfile = async (user: User) => {
     const userDocRef = doc(db, "users", user.uid);
@@ -72,13 +82,29 @@ export const loginUser = (email: string, password: string) => {
 };
 
 // 3. Google Sign-In
-export const signInWithGoogle = async (): Promise<void> => {
+export const signInWithGoogle = async (): Promise<User | void> => {
     logger.info('AuthService', 'Google sign-in initiated');
 
     try {
         const provider = new GoogleAuthProvider();
-        await signInWithRedirect(auth, provider);
+
+        if (shouldUseRedirectForGoogleSignIn()) {
+            await signInWithRedirect(auth, provider);
+            return;
+        }
+
+        const userCredential = await signInWithPopup(auth, provider);
+        await ensureUserProfile(userCredential.user);
+        logger.success('AuthService', 'Google sign-in successful', { uid: userCredential.user.uid, email: userCredential.user.email });
+        return userCredential.user;
     } catch (error: any) {
+        if (error?.code === 'auth/popup-blocked') {
+            logger.warn('AuthService', 'Google popup blocked, retrying with redirect');
+            const provider = new GoogleAuthProvider();
+            await signInWithRedirect(auth, provider);
+            return;
+        }
+
         logger.error('AuthService', 'Google sign-in failed', {
             code: error.code,
             message: error.message
