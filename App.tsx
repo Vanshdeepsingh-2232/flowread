@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { Analytics } from '@vercel/analytics/react';
 import { logger } from './utils/logger';
 import { isPermissionDeniedError } from './utils/firebaseErrors';
 import { AppState, Book, UserSettings, Theme } from './types';
@@ -769,9 +770,9 @@ const App: React.FC = () => {
         {/* Dynamic Paper Texture Overlay */}
         <div className="paper-overlay" />
       </div>
+      <Analytics />
     </ErrorBoundary>
   );
 };
 
 export default App;
-
