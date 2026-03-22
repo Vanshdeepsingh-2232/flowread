@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { registerUser, loginUser, signInWithGoogle } from '../services/authService';
 import { X } from 'lucide-react';
 import { logger } from '../utils/logger';
+import { isPermissionDeniedError } from '../utils/firebaseErrors';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -21,6 +22,9 @@ const getFriendlyAuthError = (err: { code?: string; message?: string }) => {
     if (err.code === 'auth/popup-blocked') return 'Pop-up blocked. Please allow pop-ups for this site.';
     if (err.code === 'auth/unauthorized-domain') {
         return `Google sign-in is not enabled for ${currentHost}. Add this domain in Firebase Console → Authentication → Settings → Authorized domains.`;
+    }
+    if (isPermissionDeniedError(err)) {
+        return 'Your account is signed in, but cloud profile access is currently unavailable. Please try again in a moment.';
     }
 
     return `Error: ${err.code} - ${err.message}`;
