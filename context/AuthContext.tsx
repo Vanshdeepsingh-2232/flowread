@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { subscribeToAuthChanges } from "../services/authService";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../config/firebase";
+import { auth, db } from "../config/firebase";
 import { User } from "firebase/auth";
 import { logger } from "../utils/logger";
+import { isPermissionDeniedError } from "../utils/firebaseErrors";
 
 interface UserProfile {
     uid: string;
@@ -73,11 +74,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 try {
                     const docRef = doc(db, "users", user.uid);
                     const docSnap = await getDoc(docRef);
+
+                    if (!mounted || auth.currentUser?.uid !== user.uid) {
+                        return;
+                    }
+
                     if (docSnap.exists()) {
                         setUserProfile(docSnap.data() as UserProfile);
                         logger.success('AuthContext', 'User profile loaded', { displayName: docSnap.data().displayName });
                     }
                 } catch (err) {
+                    if (!mounted) {
+                        return;
+                    }
+
+                    if (isPermissionDeniedError(err) && auth.currentUser?.uid !== user.uid) {
+                        logger.info('AuthContext', 'Skipped profile fetch because auth changed during request');
+                        return;
+                    }
+
                     logger.error('AuthContext', 'Error fetching profile from Firestore', err);
                 }
             } else {
