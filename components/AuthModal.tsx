@@ -20,6 +20,7 @@ const getFriendlyAuthError = (err: { code?: string; message?: string }) => {
     if (err.code === 'auth/weak-password') return 'Password should be at least 6 characters.';
     if (err.code === 'auth/popup-closed-by-user') return 'Sign-in cancelled.';
     if (err.code === 'auth/popup-blocked') return 'Pop-up blocked. Please allow pop-ups for this site.';
+    if (err.code === 'auth/cancelled-popup-request') return 'A previous Google sign-in request is still in progress. Please wait a moment and try again.';
     if (err.code === 'auth/unauthorized-domain') {
         return `Google sign-in is not enabled for ${currentHost}. Add this domain in Firebase Console → Authentication → Settings → Authorized domains.`;
     }
@@ -158,7 +159,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                             setError('');
                             setLoading(true);
                             try {
-                                await signInWithGoogle();
+                                const result = await signInWithGoogle();
+                                if (!result) {
+                                    setError('Continuing with Google sign-in… complete the browser step and FlowRead will finish signing you in when you return.');
+                                }
                             } catch (err: any) {
                                 setError(getFriendlyAuthError(err));
                                 logger.error('AuthModal', "Google Sign-In Error", err);

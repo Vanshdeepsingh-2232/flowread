@@ -3,6 +3,7 @@ import {
     signInWithEmailAndPassword,
     signInWithPopup,
     signInWithRedirect,
+    getRedirectResult,
     GoogleAuthProvider,
     signOut,
     onAuthStateChanged,
@@ -13,13 +14,42 @@ import { auth, db } from "../config/firebase";
 import { logger } from "../utils/logger";
 import { isPermissionDeniedError } from "../utils/firebaseErrors";
 
+const GOOGLE_REDIRECT_PENDING_KEY = 'flowread-google-redirect-pending';
+
+const isIosStandalone = () => (navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+const isStandaloneDisplayMode = () => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+        return false;
+    }
+
+    return window.matchMedia('(display-mode: standalone)').matches
+        || window.matchMedia('(display-mode: minimal-ui)').matches
+        || window.matchMedia('(display-mode: fullscreen)').matches;
+};
+
 const shouldUseRedirectForGoogleSignIn = () => {
     if (typeof window === 'undefined') return false;
 
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    const isStandalone = isStandaloneDisplayMode() || isIosStandalone();
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     return isStandalone || isMobile;
+};
+
+const markGoogleRedirectPending = () => {
+    if (typeof window === 'undefined') return;
+    window.sessionStorage.setItem(GOOGLE_REDIRECT_PENDING_KEY, '1');
+};
+
+const clearGoogleRedirectPending = () => {
+    if (typeof window === 'undefined') return;
+    window.sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY);
+};
+
+export const isGoogleRedirectPending = () => {
+    if (typeof window === 'undefined') return false;
+    return window.sessionStorage.getItem(GOOGLE_REDIRECT_PENDING_KEY) === '1';
 };
 
 const ensureUserProfile = async (user: User) => {
@@ -104,6 +134,8 @@ export const signInWithGoogle = async (): Promise<User | void> => {
         const provider = new GoogleAuthProvider();
 
         if (shouldUseRedirectForGoogleSignIn()) {
+            markGoogleRedirectPending();
+            logger.info('AuthService', 'Using redirect-based Google sign-in for mobile/PWA context');
             await signInWithRedirect(auth, provider);
             return;
         }
@@ -129,11 +161,57 @@ export const signInWithGoogle = async (): Promise<User | void> => {
         if (error?.code === 'auth/popup-blocked') {
             logger.warn('AuthService', 'Google popup blocked, retrying with redirect');
             const provider = new GoogleAuthProvider();
+            markGoogleRedirectPending();
             await signInWithRedirect(auth, provider);
             return;
         }
 
         logger.error('AuthService', 'Google sign-in failed', {
+            code: error.code,
+            message: error.message
+        });
+        throw error;
+    }
+};
+
+export const completeGoogleRedirectSignIn = async (): Promise<User | null> => {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    try {
+        const result = await getRedirectResult(auth);
+
+        if (!result) {
+            if (isGoogleRedirectPending()) {
+                logger.info('AuthService', 'Google redirect returned without a result; waiting for auth state listener');
+            }
+            return null;
+        }
+
+        logger.success('AuthService', 'Google redirect sign-in completed', {
+            uid: result.user.uid,
+            email: result.user.email
+        });
+
+        try {
+            await ensureUserProfile(result.user);
+        } catch (error: any) {
+            if (isPermissionDeniedError(error)) {
+                logger.warn('AuthService', 'Google redirect sign-in succeeded, but profile sync was skipped because Firestore permissions were unavailable', {
+                    code: error.code,
+                    message: error.message
+                });
+            } else {
+                throw error;
+            }
+        }
+
+        clearGoogleRedirectPending();
+        return result.user;
+    } catch (error: any) {
+        clearGoogleRedirectPending();
+        logger.error('AuthService', 'Google redirect sign-in failed', {
             code: error.code,
             message: error.message
         });

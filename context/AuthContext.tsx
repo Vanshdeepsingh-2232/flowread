@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { subscribeToAuthChanges } from "../services/authService";
+import { completeGoogleRedirectSignIn, subscribeToAuthChanges } from "../services/authService";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
 import { User } from "firebase/auth";
@@ -49,20 +49,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         let mounted = true;
+        let authReady = false;
 
         // Safety timeout: If Firebase doesn't respond within 800ms, show the app anyway
         const timeoutId = setTimeout(() => {
-            if (mounted) {
+            if (mounted && !authReady) {
                 logger.warn('AuthContext', 'Auth initialization timed out after 800ms - UI proceeding');
                 setConnectionStatus('offline');
                 setLoading(false);
             }
         }, 800);
 
+        completeGoogleRedirectSignIn().catch((error) => {
+            logger.error('AuthContext', 'Failed to finalize Google redirect sign-in', error);
+        });
+
         // Listen for Firebase Auth changes (Login/Logout)
         const unsubscribe = subscribeToAuthChanges(async (user) => {
             if (!mounted) return;
 
+            authReady = true;
             clearTimeout(timeoutId);
             setConnectionStatus(navigator.onLine ? 'connected' : 'offline');
             logger.success('AuthContext', 'Auth state changed', { status: navigator.onLine ? 'online' : 'offline' });
