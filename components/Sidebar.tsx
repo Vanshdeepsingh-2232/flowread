@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { Home, User, Server, Settings, X, BookOpen, BarChart2, LogOut, Clock } from 'lucide-react';
 import { AppState } from '../types';
 import { logoutUser } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenSettings,
   side = 'left'
 }) => {
+  const { currentUser } = useAuth();
 
   // Dynamic Styles based on Side
   const transformClass = side === 'left'
@@ -116,17 +118,19 @@ const Sidebar: React.FC<SidebarProps> = ({
               Settings & Preferences
             </button>
 
-            {/* Logout (Mobile Only generally, but useful here too) */}
-            <button
-              onClick={() => {
-                logoutUser();
-                onClose();
-              }}
-              className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all font-medium mt-1"
-            >
-              <LogOut size={20} />
-              Sign Out
-            </button>
+            {/* Logout (only when authenticated) */}
+            {currentUser && (
+              <button
+                onClick={() => {
+                  logoutUser();
+                  onClose();
+                }}
+                className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all font-medium mt-1"
+              >
+                <LogOut size={20} />
+                Sign Out
+              </button>
+            )}
 
             <p className="text-center text-xs text-muted/40 mt-6 font-mono cursor-pointer hover:text-primary transition-colors" onClick={() => { onNavigate(AppState.CHANGELOG); onClose(); }}>v0.0.1</p>
           </div>
