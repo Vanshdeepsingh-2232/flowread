@@ -11,6 +11,7 @@ import {
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
 import { logger } from "../utils/logger";
+import { isPermissionDeniedError } from "../utils/firebaseErrors";
 
 const shouldUseRedirectForGoogleSignIn = () => {
     if (typeof window === 'undefined') return false;
@@ -54,7 +55,21 @@ export const registerUser = async (email: string, password: string, displayName:
 
         // Create the user document in Firestore immediately
         logger.info('AuthService', 'Creating user profile in Firestore');
-        await ensureUserProfile({ ...user, displayName: displayName || user.displayName } as User);
+
+        try {
+            await ensureUserProfile({ ...user, displayName: displayName || user.displayName } as User);
+        } catch (error: any) {
+            if (isPermissionDeniedError(error)) {
+                logger.warn('AuthService', 'User created but profile sync was skipped because Firestore permissions were unavailable', {
+                    code: error.code,
+                    message: error.message
+                });
+                return user;
+            }
+
+            throw error;
+        }
+
         return user;
     } catch (error: any) {
         logger.error('AuthService', 'Registration failed', {
@@ -94,7 +109,20 @@ export const signInWithGoogle = async (): Promise<User | void> => {
         }
 
         const userCredential = await signInWithPopup(auth, provider);
-        await ensureUserProfile(userCredential.user);
+
+        try {
+            await ensureUserProfile(userCredential.user);
+        } catch (error: any) {
+            if (isPermissionDeniedError(error)) {
+                logger.warn('AuthService', 'Google sign-in succeeded, but profile sync was skipped because Firestore permissions were unavailable', {
+                    code: error.code,
+                    message: error.message
+                });
+            } else {
+                throw error;
+            }
+        }
+
         logger.success('AuthService', 'Google sign-in successful', { uid: userCredential.user.uid, email: userCredential.user.email });
         return userCredential.user;
     } catch (error: any) {
@@ -137,7 +165,11 @@ export const subscribeToAuthChanges = (callback: (user: User | null) => void) =>
             try {
                 await ensureUserProfile(user);
             } catch (error) {
-                logger.error('AuthService', 'Failed to ensure user profile after auth change', error);
+                if (isPermissionDeniedError(error)) {
+                    logger.warn('AuthService', 'Skipped profile sync after auth change because Firestore permissions were unavailable', error);
+                } else {
+                    logger.error('AuthService', 'Failed to ensure user profile after auth change', error);
+                }
             }
         } else {
             logger.info('AuthService', 'Auth state changed: User logged out');
