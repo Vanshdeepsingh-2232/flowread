@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from './utils/logger';
+import { isPermissionDeniedError } from './utils/firebaseErrors';
 import { AppState, Book, UserSettings, Theme } from './types';
 import { db } from './db';
 import { extractTextFromPdf, extractTextFromTxt } from './services/pdfService';
@@ -90,6 +91,8 @@ const App: React.FC = () => {
 
   // Load Settings (Local + Cloud Sync)
   useEffect(() => {
+    let isActive = true;
+
     const loadSettings = async () => {
       logger.info('App', 'Loading user settings...');
 
@@ -99,7 +102,9 @@ const App: React.FC = () => {
       if (saved) {
         try {
           localSettings = { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
-          setSettings(localSettings);
+          if (isActive) {
+            setSettings(localSettings);
+          }
           logger.success('App', 'Local settings loaded');
         } catch (e) {
           logger.error('App', 'Failed to parse local settings', e);
@@ -110,6 +115,11 @@ const App: React.FC = () => {
       if (user?.uid) {
         try {
           const cloudSettings = await getUserSettings(user.uid);
+
+          if (!isActive) {
+            return;
+          }
+
           if (cloudSettings) {
             // Cloud takes priority, merge with defaults for any missing keys
             const mergedSettings = { ...DEFAULT_SETTINGS, ...cloudSettings };
@@ -119,12 +129,25 @@ const App: React.FC = () => {
             logger.success('App', 'Cloud settings synced to local');
           }
         } catch (e) {
+          if (!isActive) {
+            return;
+          }
+
+          if (isPermissionDeniedError(e)) {
+            logger.info('App', 'Skipped cloud settings sync because auth changed during request');
+            return;
+          }
+
           logger.warn('App', 'Could not load cloud settings, using local', e);
         }
       }
     };
 
     loadSettings();
+
+    return () => {
+      isActive = false;
+    };
   }, [user?.uid]);
 
   // Persist Settings & Apply Global Theme/Font
