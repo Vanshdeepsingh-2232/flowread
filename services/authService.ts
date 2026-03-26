@@ -28,13 +28,10 @@ const isStandaloneDisplayMode = () => {
         || window.matchMedia('(display-mode: fullscreen)').matches;
 };
 
-const shouldUseRedirectForGoogleSignIn = () => {
+const shouldPreferRedirectForGoogleSignIn = () => {
     if (typeof window === 'undefined') return false;
 
-    const isStandalone = isStandaloneDisplayMode() || isIosStandalone();
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-    return isStandalone || isMobile;
+    return isStandaloneDisplayMode() || isIosStandalone();
 };
 
 const markGoogleRedirectPending = () => {
@@ -130,16 +127,20 @@ export const loginUser = (email: string, password: string) => {
 export const signInWithGoogle = async (): Promise<User | void> => {
     logger.info('AuthService', 'Google sign-in initiated');
 
-    try {
-        const provider = new GoogleAuthProvider();
+    const provider = new GoogleAuthProvider();
 
-        if (shouldUseRedirectForGoogleSignIn()) {
+    try {
+        if (shouldPreferRedirectForGoogleSignIn()) {
+            // Standalone PWAs (especially iOS/Web.app) can fail to complete popup
+            // messaging reliably. Prefer redirect there.
             markGoogleRedirectPending();
-            logger.info('AuthService', 'Using redirect-based Google sign-in for mobile/PWA context');
+            logger.info('AuthService', 'Using redirect-based Google sign-in for standalone PWA context');
             await signInWithRedirect(auth, provider);
             return;
         }
 
+        // Prefer popup for regular browser tabs (desktop + mobile browsers).
+        // Redirect can return in a different browsing context in some PWA flows.
         const userCredential = await signInWithPopup(auth, provider);
 
         try {
@@ -158,9 +159,8 @@ export const signInWithGoogle = async (): Promise<User | void> => {
         logger.success('AuthService', 'Google sign-in successful', { uid: userCredential.user.uid, email: userCredential.user.email });
         return userCredential.user;
     } catch (error: any) {
-        if (error?.code === 'auth/popup-blocked') {
-            logger.warn('AuthService', 'Google popup blocked, retrying with redirect');
-            const provider = new GoogleAuthProvider();
+        if (error?.code === 'auth/popup-blocked' || error?.code === 'auth/operation-not-supported-in-this-environment') {
+            logger.warn('AuthService', 'Google popup is unavailable, retrying with redirect', { code: error?.code });
             markGoogleRedirectPending();
             await signInWithRedirect(auth, provider);
             return;
