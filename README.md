@@ -4,7 +4,7 @@
 # 🌊 FlowRead
 ### *The Art of Frictionless Reading*
 
-FlowRead isn't just an e-reader; it's an AI-powered reading companion designed to turn daunting "walls of text" into digestible, engaging, and memorable "Smart Reading Cards." 
+FlowRead isn't just an e-reader; it's an algorithm-powered reading companion designed to turn daunting "walls of text" into digestible, engaging, and memorable "Smart Reading Cards." 
 
 [**Launch App**](https://ai.studio/apps/drive/1yyXR68pXRfEd3xRa5kmVskEKTJJ7gZNx) • [**Report Bug**](https://github.com/Vanshdeepsingh-2232/flowread/issues)
 
@@ -13,7 +13,7 @@ FlowRead isn't just an e-reader; it's an AI-powered reading companion designed t
 
 ## ✨ Features
 
-- **🧠 AI Smart Chunking**: Powered by Flow AI, FlowRead automatically converts long PDFs and text files into semantic "cards" based on scene changes, plot points, or topic shifts.
+- **🧠 Smart Chunking Engine**: Powered by FlowRead's semantic chunking engine, FlowRead automatically converts long PDFs and text files into semantic "cards" based on scene changes, plot points, or topic shifts.
 - **🎭 Automated Genre Detection**: The app analyzes your book upon upload to tailor the UI and reading experience (Fiction vs. Non-Fiction vs. Technical).
 - **☁️ Seamless Cloud Sync**: Authenticate with Firebase to sync your reading progress and library across all your devices.
 - **⚡ Local-First Performance**: Uses Dexie (IndexedDB) for blazing fast, offline-ready library management.
@@ -28,7 +28,7 @@ FlowRead isn't just an e-reader; it's an AI-powered reading companion designed t
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18+)
-- [AI API Key](https://aistudio.google.com/app/apikey)
+- [Semantic Engine API Key](https://aistudio.google.com/app/apikey)
 - Firebase Project (for Auth & Cloud Sync)
 
 ### Installation
@@ -46,12 +46,12 @@ FlowRead isn't just an e-reader; it's an AI-powered reading companion designed t
    node setupEnv.js
    ```
    *Then update `.env.local` with your own keys:*
-   - `API_KEY`: Your key from the AI provider dashboard.
+   - `API_KEY`: Your key from the semantic engine provider dashboard.
    - `VITE_FIREBASE_API_KEY`: Found in Firebase Project Settings.
 
 3. **Enable API (Crucial)**
    Ensure the **Generative Language API** is enabled for your project:
-   [Enable AI API here](https://console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview)
+   [Enable Language API here](https://console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview)
 
 4. **Launch**
    ```bash
@@ -65,7 +65,7 @@ FlowRead isn't just an e-reader; it's an AI-powered reading companion designed t
 - **Styling**: Tailwind CSS
 - **Database**: Dexie.js (IndexedDB)
 - **Backend**: Firebase (Auth, Firestore, Storage)
-- **AI**: Flow AI Core (Gemini 2.5)
+- **Semantic Engine**: FlowRead Chunking Core (Gemini 2.5)
 
 ---
 

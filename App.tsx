@@ -377,10 +377,10 @@ const App: React.FC = () => {
       }
 
       // ---------------------------------------------------------
-      // AI Cleaning Step (If raw content returned)
+      // Algorithmic Cleanup Step (If raw content returned)
       // ---------------------------------------------------------
       if (article.isRaw) {
-        setProcessingState({ active: true, message: 'AI is reading the page...', progress: 40 });
+        setProcessingState({ active: true, message: 'Chunking engine is reading the page...', progress: 40 });
         try {
           const aiCleaned = await cleanWebHtml(article.content);
           article = {
@@ -391,9 +391,9 @@ const App: React.FC = () => {
             byline: aiCleaned.author !== "Unknown" ? aiCleaned.author : article.byline,
             isRaw: false
           };
-          logger.success('App', 'AI successfully cleaned the raw content');
+          logger.success('App', 'Chunking engine successfully cleaned the raw content');
         } catch (err) {
-          logger.warn('App', 'AI cleaning failed, using raw content as fallback', err);
+          logger.warn('App', 'Algorithmic cleanup failed, using raw content as fallback', err);
         }
       }
 
@@ -632,7 +632,7 @@ const App: React.FC = () => {
             </div>
           </div>
           <h2 className="text-2xl font-bold animate-pulse">{processingState.message}</h2>
-          <p className="text-muted max-w-md">Our AI is reading your book, analyzing the plot, and preparing the perfect reading experience.</p>
+          <p className="text-muted max-w-md">Our chunking engine is reading your book, analyzing the plot, and preparing the perfect reading experience.</p>
         </div>
       );
     }

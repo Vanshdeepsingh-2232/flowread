@@ -6,13 +6,28 @@ interface OfflineViewProps {
   onGoHome?: () => void;
   message?: string;
   title?: string;
+  offlineAvailableFeatures?: string[];
+  onlineRequiredFeatures?: string[];
 }
 
 const OfflineView: React.FC<OfflineViewProps> = ({ 
   onRetry, 
   onGoHome, 
   title = "Connection Lost", 
-  message = "It looks like you're offline. FlowRead needs an internet connection to process books with AI." 
+  message = "You're offline, but local reading still works. Internet is only required for cloud and processing features.",
+  offlineAvailableFeatures = [
+    'Open the app shell',
+    'Browse your local library',
+    'Read already processed books',
+    'View saved highlights in Brain Bank',
+    'Use saved visual settings'
+  ],
+  onlineRequiredFeatures = [
+    'Sign in / sign up',
+    'Cloud sync and remote uploads',
+    'Semantic chunking and analysis',
+    'Web article fetching'
+  ]
 }) => {
   return (
     <div className="fixed inset-0 z-100 bg-background flex items-center justify-center p-6 animate-in fade-in duration-500">
@@ -34,6 +49,25 @@ const OfflineView: React.FC<OfflineViewProps> = ({
           <p className="text-muted leading-relaxed">
             {message}
           </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+          <div className="bg-surface/70 border border-emerald-500/20 rounded-xl p-3">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-emerald-400 font-bold mb-2">Works Offline</p>
+            <ul className="space-y-1.5">
+              {offlineAvailableFeatures.map((item) => (
+                <li key={item} className="text-xs text-muted">• {item}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="bg-surface/70 border border-amber-500/20 rounded-xl p-3">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-amber-400 font-bold mb-2">Needs Internet</p>
+            <ul className="space-y-1.5">
+              {onlineRequiredFeatures.map((item) => (
+                <li key={item} className="text-xs text-muted">• {item}</li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         {/* Actions */}
@@ -61,7 +95,7 @@ const OfflineView: React.FC<OfflineViewProps> = ({
 
         {/* Support Text */}
         <p className="text-[10px] text-muted/50 uppercase tracking-[0.2em] font-mono">
-          AI Services require a cloud connection
+          Chunking services require a cloud connection
         </p>
       </div>
     </div>
