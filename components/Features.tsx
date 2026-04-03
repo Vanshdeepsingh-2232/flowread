@@ -9,8 +9,8 @@ const Features: React.FC<FeaturesProps> = ({ onBack }) => {
     const features = [
         {
             icon: <Brain size={28} className="text-purple-500" />,
-            title: "AI-Powered Chunking",
-            description: "Smart content segmentation using Flow AI for optimal reading flow"
+            title: "Algorithm-Powered Chunking",
+            description: "Smart content segmentation using FlowRead's chunking engine for optimal reading flow"
         },
         {
             icon: <BookOpen size={28} className="text-blue-500" />,
@@ -64,7 +64,7 @@ const Features: React.FC<FeaturesProps> = ({ onBack }) => {
                         Reading, Reimagined
                     </h2>
                     <p className="text-lg text-muted max-w-2xl mx-auto">
-                        FlowRead combines artificial intelligence with thoughtful design to create
+                        FlowRead combines semantic algorithms with thoughtful design to create
                         an immersive reading experience that helps you focus, retain, and enjoy your books.
                     </p>
                 </div>

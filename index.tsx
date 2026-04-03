@@ -63,11 +63,42 @@ root.render(
   </React.StrictMode>
 );
 logger.success('System', 'React root rendered');
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
         logger.success('System', 'Service worker registered', { scope: registration.scope });
+
+        const cacheableResources = performance
+          .getEntriesByType('resource')
+          .map((entry) => entry.name)
+          .filter((resourceUrl) => {
+            try {
+              const parsed = new URL(resourceUrl);
+              if (parsed.origin !== window.location.origin) return false;
+
+              return (
+                parsed.pathname.endsWith('.js') ||
+                parsed.pathname.endsWith('.css') ||
+                parsed.pathname.endsWith('.svg') ||
+                parsed.pathname.endsWith('.png') ||
+                parsed.pathname.endsWith('.jpg') ||
+                parsed.pathname.endsWith('.jpeg') ||
+                parsed.pathname.endsWith('.webp') ||
+                parsed.pathname.endsWith('.woff2')
+              );
+            } catch {
+              return false;
+            }
+          });
+
+        if (registration.active && cacheableResources.length > 0) {
+          registration.active.postMessage({
+            type: 'CACHE_URLS',
+            payload: cacheableResources
+          });
+        }
       })
       .catch((error) => {
         logger.error('System', 'Service worker registration failed', error);

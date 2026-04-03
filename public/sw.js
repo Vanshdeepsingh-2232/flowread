@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flowread-shell-v2';
+const CACHE_NAME = 'flowread-shell-v3';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -6,6 +6,27 @@ const APP_SHELL = [
   '/logo2.svg',
   '/paper-texture.jpg'
 ];
+
+self.addEventListener('message', (event) => {
+  if (!event.data || event.data.type !== 'CACHE_URLS') {
+    return;
+  }
+
+  const urls = Array.isArray(event.data.payload) ? event.data.payload : [];
+  if (urls.length === 0) {
+    return;
+  }
+
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(
+        urls.map((url) =>
+          cache.add(url).catch(() => null)
+        )
+      )
+    )
+  );
+});
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -41,7 +62,10 @@ self.addEventListener('fetch', (event) => {
       fetch(event.request)
         .then((response) => {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put('/', copy));
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, copy.clone());
+            cache.put('/', copy);
+          });
           return response;
         })
         .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/') || caches.match('/index.html')))

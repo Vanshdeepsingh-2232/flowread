@@ -33,7 +33,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onNavigateToProfile, onOpen
                     />
                     <div>
                         <h1 className="text-xl font-bold text-text">FlowRead</h1>
-                        <p className="hidden sm:block text-xs text-muted leading-tight">AI-powered immersive reading</p>
+                        <p className="hidden sm:block text-xs text-muted leading-tight">Algorithm-powered immersive reading</p>
                     </div>
 
                     {/* Connection Status Indicator */}

@@ -50,7 +50,16 @@ const Changelog: React.FC<ChangelogProps> = ({ onBack }) => {
                             prose-a:text-primary hover:prose-a:underline
                             prose-strong:text-text prose-code:text-primary
                         ">
-                            <ReactMarkdown>{markdown}</ReactMarkdown>
+                            <ReactMarkdown
+                                components={{
+                                    hr: () => <div className="my-8 h-px bg-[var(--border-color)]" />,
+                                    ul: ({ children }) => <ul className="space-y-2 my-3">{children}</ul>,
+                                    li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                                    p: ({ children }) => <p className="leading-relaxed">{children}</p>,
+                                }}
+                            >
+                                {markdown}
+                            </ReactMarkdown>
                         </div>
                     )}
                 </div>

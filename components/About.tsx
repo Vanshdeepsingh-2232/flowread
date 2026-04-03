@@ -40,7 +40,7 @@ const About: React.FC<AboutProps> = ({ onBack }) => {
                     <p className="text-lg text-muted leading-relaxed">
                         FlowRead is on a mission to revolutionize digital reading. We believe that books
                         deserve better than endless scrolling and cluttered interfaces. By combining
-                        cutting-edge AI with thoughtful design, we're creating a reading experience
+                        advanced semantic algorithms with thoughtful design, we're creating a reading experience
                         that's immersive, intuitive, and genuinely enjoyable.
                     </p>
                 </section>
@@ -66,9 +66,9 @@ const About: React.FC<AboutProps> = ({ onBack }) => {
                                 <span className="text-primary font-bold">2</span>
                             </div>
                             <div>
-                                <h3 className="font-semibold text-text mb-1">AI Processing</h3>
+                                <h3 className="font-semibold text-text mb-1">Semantic Processing</h3>
                                 <p className="text-muted text-sm">
-                                    Flow AI analyzes your book, understanding chapters, scenes, and narrative structure
+                                    Our chunking engine analyzes your book, understanding chapters, scenes, and narrative structure
                                 </p>
                             </div>
                         </div>
@@ -99,7 +99,7 @@ const About: React.FC<AboutProps> = ({ onBack }) => {
 
                         <div className="bg-surface border border-[var(--border-color)] rounded-xl p-4">
                             <Zap size={24} className="text-purple-500 mb-2" />
-                            <h3 className="font-semibold text-text mb-1">Flow AI</h3>
+                            <h3 className="font-semibold text-text mb-1">Chunking Engine</h3>
                             <p className="text-xs text-muted">Advanced language understanding</p>
                         </div>
 
