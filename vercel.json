@@ -1,12 +1,20 @@
 {
-    "rewrites": [
-        {
-            "source": "/api/(.*)",
-            "destination": "/api/$1"
-        },
-        {
-            "source": "/(.*)",
-            "destination": "/index.html"
-        }
-    ]
+  "rewrites": [
+    {
+      "source": "/__/auth/:path*",
+      "destination": "/api/firebase-auth-proxy?route=auth&path=:path*"
+    },
+    {
+      "source": "/__/firebase/:path*",
+      "destination": "/api/firebase-auth-proxy?route=firebase&path=:path*"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }

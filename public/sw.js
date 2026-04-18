@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flowread-shell-v3';
+const CACHE_NAME = 'flowread-shell-v4';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -51,8 +51,10 @@ self.addEventListener('fetch', (event) => {
   }
 
   const requestUrl = new URL(event.request.url);
+  const isFirebaseAuthRoute = requestUrl.pathname.startsWith('/__/auth/');
+  const isFirebaseInitRoute = requestUrl.pathname.startsWith('/__/firebase/');
 
-  if (requestUrl.origin === self.location.origin && requestUrl.pathname.startsWith('/__/auth/')) {
+  if (isFirebaseAuthRoute || isFirebaseInitRoute) {
     event.respondWith(fetch(event.request));
     return;
   }
@@ -61,11 +63,13 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, copy.clone());
-            cache.put('/', copy);
-          });
+          if (requestUrl.origin === self.location.origin) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, copy.clone());
+              cache.put('/', copy);
+            });
+          }
           return response;
         })
         .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/') || caches.match('/index.html')))
