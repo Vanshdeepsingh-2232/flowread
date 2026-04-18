@@ -8,9 +8,26 @@ import {
 import { getStorage } from "firebase/storage";
 
 // ⚠️ REPLACE WITH YOUR ACTUAL KEYS FROM FIREBASE CONSOLE
+const resolveAuthDomain = () => {
+    const envAuthDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN;
+
+    if (typeof window === 'undefined') {
+        return envAuthDomain;
+    }
+
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+
+    if (isLocalhost) {
+        return envAuthDomain;
+    }
+
+    return hostname;
+};
+
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    authDomain: resolveAuthDomain(),
     projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
     storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
